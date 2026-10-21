@@ -24,14 +24,15 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: dependencies
         run: |
           apt-get update
           apt-get install -y --no-install-recommends python3-pip python3-opencv python3-numpy \
             python3-yaml python3-serial python3-pytest ros-jazzy-cv-bridge ros-jazzy-diagnostic-msgs \
             ros-jazzy-nav-msgs ros-jazzy-sensor-msgs
-          pip install pymavlink onnxruntime onnx ruff
+          # apt's OpenCV is built against apt's numpy 1.x, which pip cannot uninstall
+          pip install pymavlink onnxruntime onnx ruff "numpy==$(python3 -c 'import numpy; print(numpy.__version__)')"
       - name: ruff
         run: ruff check .
       - name: manifest outputs are fresh
@@ -52,14 +53,14 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: dependencies
         run: |
           apt-get update
           apt-get install -y --no-install-recommends python3-pip python3-opencv python3-numpy \
             python3-yaml python3-serial python3-pytest ros-jazzy-cv-bridge ros-jazzy-diagnostic-msgs \
             ros-jazzy-nav-msgs ros-jazzy-sensor-msgs git g++ make
-          pip install pymavlink onnxruntime empy==3.3.4 pexpect future
+          pip install pymavlink onnxruntime empy==3.3.4 pexpect future "numpy==$(python3 -c 'import numpy; print(numpy.__version__)')"
       - name: ArduPilot SITL cache
         id: ap-cache
         uses: actions/cache@v4
