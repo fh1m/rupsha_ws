@@ -1,0 +1,12 @@
+line-length = 110
+extend-exclude = ["build", "install", "log", "logs", "third_party", "src/external"]
+
+[lint]
+select = ["E", "F", "W", "B", "I"]
+ignore = ["E501"]
+
+[lint.isort]
+known-first-party = [
+    "rupsha_control", "rupsha_planner", "rupsha_vision", "rupsha_localization",
+    "rupsha_sensors", "rupsha_sim", "rupsha_interfaces",
+]

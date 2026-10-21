@@ -1,0 +1,39 @@
+# Every sensor Rupsha has, in one table: who publishes it, on which manifest topic,
+# at what rate. sensors.launch.py starts the `driver:` rows; `sensors_check`
+# measures every enabled row and says PASS / FAIL / ABSENT.
+#
+#   topic:     a rupsha_control.manifest.Topics attribute, never a literal string
+#   driver:    v4l2_camera (USB UVC) | camera_ros (Pi CSI, libcamera) | board (the
+#              manager republishes it from the Pixhawk; nothing to launch)
+#   min_hz:    sensors_check FAILs below this
+#   calibration: camera_info YAML under config/calibration/; absent -> the driver
+#              publishes no K and rupsha_vision reports range_m = NaN (honest)
+
+sensors:
+  front_camera:
+    enabled: true
+    driver: v4l2_camera
+    topic: CAMERA_FRONT
+    info_topic: CAMERA_FRONT_INFO
+    frame_id: camera_front_optical
+    device: /dev/video0
+    width: 640
+    height: 480
+    fps: 15
+    min_hz: 10.0
+    # Not calibrated yet. ros2 run camera_calibration cameracalibrator --size 8x6
+    # --square 0.025 --ros-args -r image:=/rupsha/camera/front/image_raw, save the
+    # YAML as config/calibration/front_camera.yaml and name it here.
+    calibration: null
+
+  board_imu:
+    enabled: true
+    driver: board
+    topic: BOARD_IMU
+    min_hz: 8.0
+
+  board_navsat:
+    enabled: true
+    driver: board
+    topic: BOARD_NAVSAT
+    min_hz: 4.0

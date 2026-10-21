@@ -1,0 +1,289 @@
+# rupsha.yaml -- the single source of truth for the Rupsha wire surface.
+#
+# Everything below is GENERATED into code and docs by `tools/gen_manifest.py`:
+#   src/rupsha_interfaces/action/Move.action
+#   src/rupsha_interfaces/msg/RupshaState.msg
+#   src/rupsha_interfaces/msg/AutonomyStatus.msg
+#   src/rupsha_control/rupsha_control/manifest.py   (static enums + VERBS + TOPICS)
+#   .claude/context/reference/commands.md
+#
+# Edit HERE, run `python3 tools/gen_manifest.py`, commit both. `--check` exits
+# non-zero when a generated file is stale, and test_manifest.py runs it.
+#
+# One truth, two copies is the bug. MissouriMRDT's RoveComm manifest is the
+# precedent and also the warning: their autonomy looks up two keys by string
+# that the pinned manifest no longer has. Here every consumer imports a static
+# attribute, so a removed key is an ImportError at load, not a lookup at runtime.
+
+version: 1
+
+companion:
+  # The Pi's MAVLink identity. The board's GCS failsafe is scoped to THIS sysid
+  # (MAV_GCS_SYSID in rupsha_baseline.parm), so a base-station GCS on the default
+  # 255 cannot keep a dead companion looking alive. A test compares the two.
+  sysid: 245
+  compid: 191        # MAV_COMP_ID_ONBOARD_COMPUTER
+  heartbeat_hz: 2.0
+
+firmware:
+  vehicle: ArduRover
+  # The floor the manager refuses to arm below. Stated once; docs quote it from
+  # the generated reference, never from memory.
+  min_version: "4.7.2"
+  git: fb773567
+  board_target: Pixhawk1
+
+# Typed fields a verb may read from Move.Goal. rosidl zero-initialises unset
+# fields, so every field's "unset" value is listed and defaults fill it.
+fields:
+  duration:    {type: float32, unit: s,     help: "how long a timed host loop runs"}
+  speed:       {type: float32, unit: m/s,   help: "ground speed; sign is direction for timed moves"}
+  yaw_rate:    {type: float32, unit: deg/s, help: "turn rate, positive = clockwise from above"}
+  distance:    {type: float32, unit: m,     help: "body-frame distance for drive()"}
+  heading:     {type: float32, unit: deg,   help: "absolute heading 0..360, 0 = north"}
+  angle:       {type: float32, unit: deg,   help: "relative turn, positive = clockwise"}
+  lat:         {type: float64, unit: deg,   help: "WGS84 latitude"}
+  lon:         {type: float64, unit: deg,   help: "WGS84 longitude"}
+  x:           {type: float32, unit: m,     help: "local north offset from the EKF origin"}
+  y:           {type: float32, unit: m,     help: "local east offset from the EKF origin"}
+  radius:      {type: float32, unit: m,     help: "acceptance or search radius"}
+  standoff:    {type: float32, unit: m,     help: "range to stop short of a target"}
+  timeout:     {type: float32, unit: s,     help: "verb budget; the verb resolves at or before it"}
+  target_name: {type: string,  unit: "",    help: "mode name, tag label, object class, LED state, EKF source set"}
+  # 0 is a real ArUco id, so the zero-initialised wire value cannot mean "unset".
+  tag_id:      {type: int32,   unit: "",    help: "ArUco id; -1 = any", wire_default: -1}
+
+# runs_on:
+#   board     -- one message; the Pixhawk closes the loop (GUIDED targets, modes)
+#   host      -- the Pi streams setpoints at stream_hz and checks abort every tick
+#   executive -- handled by the autonomy executive, not the manager
+#   meta      -- reads or settings, no motion
+# bypass_busy: executes even while another verb is running (always-available stops)
+verbs:
+  arm:
+    help: Arm. Refused below the firmware floor or while the board reports a pre-arm failure.
+    runs_on: board
+    fields: [timeout]
+    defaults: {timeout: 10.0}
+  disarm:
+    help: Disarm and confirm it on the heartbeat.
+    runs_on: board
+    bypass_busy: true
+    fields: [timeout]
+    defaults: {timeout: 10.0}
+  stop:
+    help: Zero velocity, then HOLD, confirmed on the heartbeat. Always available.
+    runs_on: board
+    bypass_busy: true
+    fields: []
+    defaults: {}
+  abort:
+    help: Cancel whatever runs, then stop. Always available.
+    runs_on: board
+    bypass_busy: true
+    fields: []
+    defaults: {}
+  set_mode:
+    help: "Switch mode by name: MANUAL|ACRO|STEERING|HOLD|LOITER|AUTO|RTL|SMART_RTL|GUIDED."
+    runs_on: board
+    fields: [target_name, timeout]
+    defaults: {timeout: 5.0}
+  hold:
+    help: HOLD mode (the board brakes and stays put).
+    runs_on: board
+    fields: []
+    defaults: {}
+  goto_gnss:
+    help: GUIDED to a lat/lon; the board's S-curve planner drives it. Resolves on arrival inside radius.
+    runs_on: board
+    fields: [lat, lon, radius, timeout]
+    defaults: {radius: 2.0, timeout: 120.0}
+  goto_local:
+    help: GUIDED to a local north/east offset from the EKF origin.
+    runs_on: board
+    fields: [x, y, radius, timeout]
+    defaults: {radius: 1.0, timeout: 60.0}
+  drive:
+    help: GUIDED body-offset target `distance` m straight ahead (negative = behind).
+    runs_on: board
+    fields: [distance, radius, timeout]
+    defaults: {radius: 0.5, timeout: 30.0}
+  turn_to:
+    help: Pivot in place to an absolute heading (host loop on yaw rate; board closes the rate loop).
+    runs_on: host
+    stream_hz: 10
+    fields: [heading, yaw_rate, timeout]
+    defaults: {yaw_rate: 45.0, timeout: 20.0}
+  turn:
+    help: Pivot by a relative angle, positive = clockwise.
+    runs_on: host
+    stream_hz: 10
+    fields: [angle, yaw_rate, timeout]
+    defaults: {yaw_rate: 45.0, timeout: 20.0}
+  move_forward:
+    help: Stream a forward body velocity for `duration` s.
+    runs_on: host
+    stream_hz: 10
+    fields: [duration, speed]
+    defaults: {speed: 0.5}
+  move_back:
+    help: Stream a reverse body velocity for `duration` s.
+    runs_on: host
+    stream_hz: 10
+    fields: [duration, speed]
+    defaults: {speed: 0.5}
+  pivot:
+    help: Spin in place at `yaw_rate` for `duration` s.
+    runs_on: host
+    stream_hz: 10
+    fields: [duration, yaw_rate]
+    defaults: {yaw_rate: 30.0}
+  arc:
+    help: Stream speed + yaw rate together for `duration` s.
+    runs_on: host
+    stream_hz: 10
+    fields: [duration, speed, yaw_rate]
+    defaults: {}
+  search_spiral:
+    help: Archimedean spiral around the current position out to `radius`, until a target is seen or time runs out.
+    runs_on: host
+    stream_hz: 10
+    fields: [radius, speed, target_name, tag_id, timeout]
+    defaults: {radius: 15.0, speed: 0.6, target_name: "", tag_id: -1, timeout: 180.0}
+  vision_approach:
+    help: Close on a tag or object until range <= standoff. Pixel- and range-native; never raises.
+    runs_on: host
+    stream_hz: 10
+    fields: [target_name, tag_id, standoff, speed, timeout]
+    defaults: {target_name: "", tag_id: -1, standoff: 2.0, speed: 0.5, timeout: 60.0}
+  set_ekf_source:
+    help: "Select the EKF3 source set: gps (set 1) | extnav (set 2). extnav needs rupsha_extnav.parm applied."
+    runs_on: meta
+    fields: [target_name]
+    defaults: {}
+  set_origin:
+    help: Set the EKF origin to lat/lon (GPS-denied start).
+    runs_on: meta
+    fields: [lat, lon]
+    defaults: {}
+  led:
+    help: "URC indicator: autonomy (red) | teleop (blue) | arrived (flashing green) | off."
+    runs_on: meta
+    fields: [target_name]
+    defaults: {}
+  wait:
+    help: Sleep `duration` s, abortable.
+    runs_on: meta
+    fields: [duration]
+    defaults: {}
+  add_position_leg:
+    help: Queue a GNSS-only leg.
+    runs_on: executive
+    fields: [lat, lon, radius]
+    defaults: {radius: 3.0}
+  add_marker_leg:
+    help: Queue a leg that ends at an ArUco post; `radius` bounds the search.
+    runs_on: executive
+    fields: [lat, lon, tag_id, radius]
+    defaults: {tag_id: -1, radius: 20.0}
+  add_object_leg:
+    help: Queue a leg that ends at an object (`target_name` = class); `radius` bounds the search.
+    runs_on: executive
+    fields: [lat, lon, target_name, radius]
+    defaults: {radius: 20.0}
+  add_obstacle:
+    help: Declare a keep-out circle the executive routes around.
+    runs_on: executive
+    fields: [lat, lon, radius]
+    defaults: {}
+  clear_legs:
+    help: Drop every queued leg.
+    runs_on: executive
+    fields: []
+    defaults: {}
+  clear_obstacles:
+    help: Drop every declared obstacle.
+    runs_on: executive
+    fields: []
+    defaults: {}
+  start_autonomy:
+    help: Run the queued legs.
+    runs_on: executive
+    fields: []
+    defaults: {}
+  disable_autonomy:
+    help: Return the executive to Idle (the vehicle stops).
+    runs_on: executive
+    bypass_busy: true
+    fields: []
+    defaults: {}
+
+enums:
+  Outcome:
+    help: Terminal code of every verb (Move.Result.outcome).
+    values: {SUCCEEDED: 0, FAILED: 1, DENIED: 2, TIMEOUT: 3, ABORTED: 4, LOST: 5, NOT_READY: 6}
+  AutonomyState:
+    help: The executive's state. Ordinals are wire values; the LED follows it.
+    values:
+      IDLE: 0
+      NAVIGATING: 1
+      SEARCH_PATTERN: 2
+      APPROACHING_MARKER: 3
+      APPROACHING_OBJECT: 4
+      VERIFYING_POSITION: 5
+      VERIFYING_MARKER: 6
+      VERIFYING_OBJECT: 7
+      REVERSING: 8
+      STUCK: 9
+  LegType:
+    help: Kind of queued leg.
+    values: {POSITION: 0, MARKER: 1, OBJECT: 2}
+  Display:
+    help: URC indicator state (rules -- red autonomous, blue teleop, flashing green arrived).
+    values: {"OFF": 0, AUTONOMY: 1, TELEOP: 2, ARRIVED: 3}   # quoted: YAML 1.1 reads bare OFF as false
+  RoverMode:
+    help: ArduRover custom_mode numbers (Rover/mode.h, 4.7.2).
+    values: {MANUAL: 0, ACRO: 1, STEERING: 3, HOLD: 4, LOITER: 5, FOLLOW: 6, SIMPLE: 7, DOCK: 8, CIRCLE: 9, AUTO: 10, RTL: 11, SMART_RTL: 12, GUIDED: 15, INITIALISING: 16}
+
+# /rupsha/state. NaN = absent, never 0.0. Published on change and at >= 1 Hz.
+state:
+  armed:        {type: bool,    help: "from HEARTBEAT base_mode"}
+  mode:         {type: string,  help: "RoverMode name, '' when unknown"}
+  link_alive:   {type: bool,    help: "a board HEARTBEAT within the last 2 s"}
+  lat:          {type: float64, help: "GLOBAL_POSITION_INT, deg"}
+  lon:          {type: float64, help: "GLOBAL_POSITION_INT, deg"}
+  yaw_deg:      {type: float32, help: "ATTITUDE yaw, 0..360"}
+  yaw_rate_dps: {type: float32, help: "ATTITUDE yawspeed, deg/s"}
+  groundspeed:  {type: float32, help: "VFR_HUD groundspeed, m/s"}
+  battery_v:    {type: float32, help: "SYS_STATUS voltage_battery; NaN when the board reports none"}
+  gps_fix:      {type: int8,    help: "GPS_RAW_INT fix_type; -1 when absent"}
+  gps_sats:     {type: int8,    help: "GPS_RAW_INT satellites_visible; -1 when absent"}
+  ekf_ok:       {type: bool,    help: "EKF_STATUS_REPORT attitude+velocity+horiz-pos-abs flags all set"}
+  prearm_ok:    {type: bool,    help: "SYS_STATUS health bit MAV_SYS_STATUS_PREARM_CHECK"}
+  last_text:    {type: string,  help: "latest STATUSTEXT from the board"}
+
+autonomy_status:
+  state:          {type: uint8,   help: "AutonomyState"}
+  display:        {type: uint8,   help: "Display"}
+  leg_index:      {type: int32,   help: "current leg, -1 when idle"}
+  legs_total:     {type: int32,   help: "queued legs"}
+  distance_to_goal: {type: float32, help: "m; NaN when there is no goal"}
+  detail:         {type: string,  help: "human one-liner"}
+
+topics:
+  # board/host/meta verbs are served by the manager on move_action; executive
+  # verbs by the executive on autonomy_action (same Move type). The executive is
+  # itself a client of move_action, so one node still owns the board.
+  move_action:      /rupsha/move
+  autonomy_action:  /rupsha/autonomy
+  state:            /rupsha/state
+  autonomy_status:  /rupsha/autonomy_status
+  detections:       /rupsha/detections
+  extnav_odometry:  /rupsha/extnav/odometry
+  shadow_odometry:  /rupsha/localization/odometry
+  board_imu:        /rupsha/imu
+  board_navsat:     /rupsha/navsat
+  wheel_speeds:     /rupsha/wheel_speeds        # reserved: wheel odometry once the drive board reports it
+  camera_front:     /rupsha/camera/front/image_raw
+  camera_front_info: /rupsha/camera/front/camera_info
+  loop_rates:       /diagnostics

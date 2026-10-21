@@ -1,0 +1,136 @@
+# Simulation and the hardware chain
+
+Five rungs, each closer to the real rover than the last. Every rung runs the **same manager
+code**; only the MAVLink URL changes. Every rung is scored against **truth** (SITL's SIMSTATE or
+Gazebo's model pose), never against the EKF the rover steered by.
+
+| Rung | Board | Physics | Companion | Command | State |
+|---|---|---|---|---|---|
+| 1. SITL | ArduRover SITL 4.7.2 | SITL's built-in `rover-skid` | laptop | `pytest -m sitl src/rupsha_sim` | BENCH |
+| 2. Gazebo lockstep | ArduRover SITL 4.7.2 | Gazebo Harmonic, 6WD model, JSON lockstep | laptop | `pytest -m gazebo src/rupsha_sim` | BENCH |
+| 3. Board-in-the-loop | the real Pixhawk | none — disarmed, outputs free | laptop | `pytest -m board src/rupsha_control` | BENCH |
+| 4. Pi-in-the-loop | ArduRover SITL on the laptop | SITL `rover-skid` | **the real Pi 4** | `tools/pil.sh` | BENCH |
+| 5. Sim-on-Hardware | the real Pixhawk running SITL physics | on the board | laptop | `tools/sim_on_hw_check.py` | BLOCKED: fits and boots, will not arm (§5) |
+
+**Why not "HITL":** ArduPilot removed classic HIL
+([PR #17721](https://github.com/ArduPilot/ardupilot/pull/17721)). Board-in-the-loop, Pi-in-the-loop
+and Sim-on-Hardware are what is left, and each proves something different: the real board's
+protocol, the real companion's timing, the real board's CPU running real control code.
+
+## 1. SITL
+
+`rupsha_sim/sitl.py` starts `ardurover` from `~/tmp/ardupilot` (found beside the workspace or via
+`ARDUPILOT_HOME`) with the baseline, a fixed home, and `--speedup 1`. It waits for the board's
+TCP port to accept before handing over the URL. Truth comes from `SIMSTATE`.
+
+What it proves (`test_sitl_scenarios.py`): arm, `goto_gnss` arrival inside the radius, velocity
+streams and their 3 s expiry, mode changes, and **the companion-loss failsafe**: the board
+declares it after `FS_GCS_TIMEOUT` (2 s) and acts after `FS_TIMEOUT` (1.5 s); the test sees HOLD
+in the next 1 Hz HEARTBEAT, so its bound is 4.5 s (seen at 3.6 s).
+
+## 2. Gazebo Harmonic + SITL JSON lockstep
+
+```bash
+ros2 launch rupsha_sim sim.launch.py world:=playpen headless:=true    # + manager, vision, localization
+ros2 launch rupsha_sim sim.launch.py executive:=true                  # + the autonomy executive
+```
+
+**The model** (`rupsha_skid`) is generated from one table in `model_gen.py`: 6 wheels, radius
+0.10 m, track 0.57 m. The ArduPilot plugin maps `SERVO1` → left wheels and `SERVO3` → right
+wheels with multiplier 40, so ±1 output is ±20 rad/s = ±2 m/s. It is *not* Rupsha's geometry —
+there is no chassis yet — and it is regenerated, never hand-edited.
+
+**Worlds** come from seeded generators (`worldgen.py`): `flat_ci` for tests, `playpen` with
+ArUco 4x4_50 posts. Generation is deterministic down to the PNG bytes; `test_sim_contract.py`
+regenerates and compares.
+
+**Board parameters for Gazebo** (`rupsha_gazebo.parm`, on top of the baseline):
+
+| Parameter | Value | Why |
+|---|---|---|
+| `CRUISE_SPEED` / `CRUISE_THROTTLE` | 1.0 / 50 | the model's measured pair: 50 % output is 1 m/s |
+| `ATC_STR_RAT_FF` | 0.16 | max turn rate of the model, with a measured scrub factor of 0.85 |
+| `ATC_STR_RAT_P` / `I` / `D` | 0.08 / 0.08 / 0 | |
+| `ATC_STR_RAT_MAX` / `ATC_STR_ACC_MAX` | 90 / 180 | |
+| `INS_ENABLE_MASK` | 1 | the model has one IMU; SITL JSON otherwise reports "accels inconsistent" |
+| `INS_ACC2OFFS_*` / `INS_ACC2SCAL_*` | 0 / 1 | neutral second-IMU calibration, or arming asks for "3D Accel calibration" |
+
+`test_sim_contract.py` checks the parameters against the model: the cruise pair and the steering
+feed-forward follow from wheel radius, multiplier, track and scrub.
+
+**The trap that cost a day:** `ArduPilotPlugin` forwards the IMU's gyro and accelerometer
+**unrotated** to SITL, which expects FRD body axes. A z-up IMU sends yaw rate with the wrong sign:
+the rate loop becomes positive feedback, and the rover spins at full output while its attitude
+looks plausible — at ~200°/s, snapshots alias and steering *looks* mirrored. The IMU sensor is
+mounted with `<pose degrees="true">0 0 0 180 0 0</pose>`. `test_sim_contract.py` pins the pose;
+mutating it back to z-up fails two of the three lockstep tests.
+
+What it proves (`test_gazebo_lockstep.py`, truth = Gazebo's model pose via gz-transport):
+
+- `move_forward` at 1.00 m/s, heading held within 1°;
+- `turn_to 90` in 3.3 s, 0.5° error, no overshoot;
+- the board's yaw agrees with Gazebo's.
+
+## 3. Board-in-the-loop
+
+The real Pixhawk on USB, nothing on its outputs. See
+[ardurover-pixhawk §5](ardurover-pixhawk.md#5-what-the-bench-proves-pytest--m-board). Arming is
+BLOCKED on compass calibration, so the GUIDED verbs are exercised up to the board's refusal —
+which itself is tested.
+
+## 4. Pi-in-the-loop
+
+```bash
+tools/pil.sh                               # square_drive against 192.168.0.102
+PI=rupsha-pi.local MISSION=square_drive tools/pil.sh
+```
+
+1. rsync the workspace to the Pi (no `--delete`: the Pi's home holds scratch files) and build it
+   inside `rupsha_pi:jazzy` (≈2 min on the Pi 4).
+2. Start the manager on the Pi, **listening** on `tcpin:0.0.0.0:5760`.
+3. Start SITL here, **dialling out** to the Pi (`--serial0 tcpclient:<pi>:5760`), with a truth
+   recorder reading `SIMSTATE` from SITL's SERIAL1 (tcp 5762) into JSONL.
+4. Run the mission on the Pi through `/rupsha/move`, collect `docker stats`, score against truth.
+
+**Why SITL dials out:** the laptop's firewall drops inbound connections and is deliberately not
+modified. Reversing the direction needs nothing opened.
+
+Result: `square_drive` 10/10 verbs, turns within 1.2°, truth closure 0.72–0.73 m, manager state
+at 9.98 Hz, IMU at 19.74 Hz, Pi container at 11.5–12.4 % CPU and 114 MiB.
+
+## 5. Sim-on-Hardware
+
+ArduPilot can build the SITL physics *into* the board firmware, so the real board's CPU runs the
+real control loops against simulated sensors. Attempted 2026-10-21; the full record is
+[`records/sim_on_hw_2026-10-21.json`](records/sim_on_hw_2026-10-21.json).
+
+**It fits and it runs, but it does not arm.** The `rover-skid` build uses 1,323,304 B of flash
+(757,440 B free). Flashed, it boots, detects the simulated GPS (3D fix) and runs EKF3 on both
+simulated IMUs, at 8 % CPU (50 Hz loop) to 27 % (400 Hz). Both simulated IMUs report *unhealthy*
+in `SYS_STATUS` and pre-arm refuses with "Gyros not healthy": with the board's parameters kept,
+after the documented wipe, and at 400, 200 and 50 Hz. Not pursued further; board-in-the-loop
+and Pi-in-the-loop cover what it would have added, except the F4's CPU running the full loop.
+
+```bash
+Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board Pixhawk1 --vehicle rover --frame rover-skid
+Tools/scripts/uploader.py --port '/dev/serial/by-id/usb-ArduPilot_Pixhawk1*' build/Pixhawk1/bin/ardurover.apj
+tools/sim_on_hw_check.py --out result.json      # nothing attached to the outputs
+```
+
+**Restoring** (done, verified): flash the official `Rover/stable/Pixhawk1` apj; wipe
+(`FORMAT_VERSION 0`, reboot) so the simulation's `AHRS_EKF_TYPE 10` / `GPS1_TYPE 100` cannot
+survive; re-apply the pre-flash dump with `param_audit --parm <dump> --apply`, reboot, apply again
+— leaving out sensor IDs, `STAT_*` and boot-measured values (`*_GND_PRESS`). Result: accel
+calibration identical, baseline audit empty, `pytest -m board` 6/6.
+
+⚠ `sitl-on-hw.py` reconfigures waf for the board. Rebuilding SITL afterwards needs
+`./waf configure --board sitl` first. Its build needs `pexpect` in the system python.
+
+## 6. Later
+
+- **Gazebo Jetty + ROS 2 Lyrical** — plugins are written against `gz_*_vendor`, so mostly a
+  rebuild; a second box runs the contract tests before the switch.
+- **DEM terrain** clipped from real desert elevation data; **Chrono SCM** slip curves fitted
+  offline into Gazebo's wheel friction.
+- **Webots** behind the same contract, only if a second engine earns its tuning cost.
+- **Isaac Sim** for YOLO training data, on borrowed GPU.

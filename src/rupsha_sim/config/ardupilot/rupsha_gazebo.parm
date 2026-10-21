@@ -1,0 +1,37 @@
+# rupsha_gazebo.parm -- SITL-only, on top of rover.parm + rover-skid.parm + rupsha_baseline.parm,
+# for the Gazebo rupsha_skid model (--model JSON). Physics comes from Gazebo, so
+# nothing here touches the vehicle's real tuning; it only matches the sim model.
+# test_sim_tuning.py recomputes every vehicle number below from model_gen.py.
+#
+# Speed: rupsha_skid wheels are radius 0.10 m with a plugin span of 40 rad/s,
+# i.e. +-20 rad/s = +-2.0 m/s at full throttle, so 50 % throttle is 1.0 m/s.
+# CRUISE_SPEED / CRUISE_THROTTLE are ONE measured pair (the speed feed-forward):
+# rover-skid.parm sets 3 m/s @ 75 %, and overriding only the throttle left the
+# controller believing 50 % meant 3 m/s -- it crawled at 0.55 m/s on a 1.0 command.
+CRUISE_SPEED,1.0
+CRUISE_THROTTLE,50
+#
+# Steering: at full steering one side runs +2 m/s and the other -2 m/s over a
+# 0.57 m track -> 7.0 rad/s ideal; the scrub of six wheels costs ~15 % (measured
+# 185 deg/s vs 217 ideal at RC 1800), so ~6.0 rad/s. FF = 1 / 6.0. rover-skid's
+# 0.2 plus P 0.2 overdrove it and the rover hunted +-50 deg around a straight line.
+ATC_STR_RAT_FF,0.16
+ATC_STR_RAT_P,0.08
+ATC_STR_RAT_I,0.08
+ATC_STR_RAT_D,0
+ATC_STR_RAT_MAX,90
+ATC_STR_ACC_MAX,180
+#
+# The real board (Pixhawk1 clone) has ONE IMU, an MPU6000 (INS_ACC_ID 1246218;
+# INS_ACC2_ID 0). With SITL's default two IMUs fed from the single Gazebo IMU,
+# arming fails "Accels inconsistent" (observed with the sensor mounted either way).
+# One IMU is both the fix and the truth about the hardware.
+INS_ENABLE_MASK,1
+# ...and rover.parm calibrates IMU2. With IMU2 masked out, any offset left on it
+# fails accel_calibrated_ok_all() ("3D Accel calibration needed"), so neutralise it.
+INS_ACC2OFFS_X,0
+INS_ACC2OFFS_Y,0
+INS_ACC2OFFS_Z,0
+INS_ACC2SCAL_X,1
+INS_ACC2SCAL_Y,1
+INS_ACC2SCAL_Z,1

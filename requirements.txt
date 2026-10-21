@@ -1,0 +1,8 @@
+# Python deps not provided by ROS 2 Jazzy apt packages. Installed into
+# /opt/rupsha-venv (created with --system-site-packages, so rclpy, cv2 from
+# python3-opencv, numpy and yaml come from the system).
+pymavlink>=2.4.41
+pyserial>=3.5
+onnxruntime>=1.18        # rupsha_vision YOLO; onnxruntime-gpu on the CUDA box
+ruff>=0.6                # lint, same as CI
+pytest>=7

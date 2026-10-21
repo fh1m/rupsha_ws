@@ -1,0 +1,5 @@
+# Pixhawk (ArduPilot, USB 1209:5741 "Pixhawk1") -> stable /dev/pixhawk symlink
+# Pixhawk 2.4.8 enumerates as product 5741. Check with: lsusb / udevadm info -a /dev/ttyACM0
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="5741", SYMLINK+="pixhawk", GROUP="dialout", MODE="0660"
+# Stop ModemManager from probing the flight controller (it breaks MAVLink)
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1209", ENV{ID_MM_DEVICE_IGNORE}="1"

@@ -1,0 +1,70 @@
+# rupsha_baseline.parm -- the ArduRover 4.7.2 parameters Rupsha depends on.
+#
+# Only the deltas from the 4.7.2 factory defaults (the full factory dump is in
+# .claude/context/platform/records/ardurover_4.7.2_factory.parm). Load with
+#   ros2 run rupsha_control param_audit --url <port> --apply
+# then `param_audit` with no --apply must print an empty diff. A row tagged
+# [BUILT] is a reasoned starting value nobody has measured on this rover yet.
+#
+# ── companion link and its failsafe ─────────────────────────────────────────
+# Only the companion (manifest companion.sysid = 245) counts as "the GCS" for the
+# failsafe, so a laptop QGC on 255 cannot keep a dead Pi looking alive. Cost:
+# QGC on 255 can no longer send RC override / MANUAL_CONTROL -- a joystick goes
+# through the Pi, by design. test_baseline_matches_manifest pins the 245.
+MAV_GCS_SYSID,245
+MAV_GCS_SYSID_HI,0
+FS_GCS_ENABLE,1
+# 2 s = 4 missed companion heartbeats at 2 Hz. Factory 5 s is a long coast.
+FS_GCS_TIMEOUT,2
+# 2 = Hold. RTL/SmartRTL need a home and a trusted path; Hold is always safe.
+FS_ACTION,2
+FS_TIMEOUT,1.5
+# No RC receiver is fitted. FS_THR_ENABLE=1 with no receiver latches a radio
+# failsafe and arming fails. Re-enable the day a receiver is wired. [BUILT]
+FS_THR_ENABLE,0
+FS_EKF_ACTION,1
+# Crash check: Hold + disarm when commanded throttle meets zero motion. Also the
+# board-side half of the stuck ladder (the executive's half reverses out).
+FS_CRASH_CHECK,1
+#
+# ── skid steer ──────────────────────────────────────────────────────────────
+# 73 ThrottleLeft on SERVO1, 74 ThrottleRight on SERVO3 (ArduPilot skid-steer
+# convention; also what ardupilot_gazebo's skid examples expect).
+SERVO1_FUNCTION,73
+SERVO3_FUNCTION,74
+#
+# ── guidance ────────────────────────────────────────────────────────────────
+# GUID_OPTIONS bit 6 = SCurves used for navigation in Guided: position targets
+# get the same jerk-limited path as AUTO waypoints instead of a step.
+GUID_OPTIONS,64
+# WP_SPEED caps GUIDED/AUTO speed (get_speed_default). 1 m/s suits a Pi-4 camera
+# budget. [BUILT]
+# ⚠ CRUISE_SPEED / CRUISE_THROTTLE are deliberately NOT set: they are one measured
+# pair (the throttle that yields that speed) feeding the speed controller's
+# feed-forward. Lowering CRUISE_SPEED alone made SITL overshoot a 1.0 m/s command
+# to 1.43 m/s and coast 4 s to a stop. Learn the pair on the vehicle (RCx_OPTION
+# 50 "Learn Cruise Speed", or the cruise learning in Mission Planner).
+WP_SPEED,1.0
+WP_RADIUS,1.0
+#
+# ── time ────────────────────────────────────────────────────────────────────
+# 1 GPS | 2 MAVLink SYSTEM_TIME: the Pi's NTP-disciplined clock reaches the log
+# timestamps before the first fix.
+BRD_RTC_TYPES,3
+#
+# ── telemetry on the USB/TELEM link the Pi uses ─────────────────────────────
+# The manager also asks with SET_MESSAGE_INTERVAL; these make a bare board useful
+# to a GCS without it.
+MAV1_EXTRA1,10
+MAV1_POSITION,10
+MAV1_EXTRA2,10
+MAV1_EXT_STAT,2
+MAV1_EXTRA3,2
+MAV1_RC_CHAN,5
+#
+# ── deliberately NOT set here ───────────────────────────────────────────────
+# EK3_SRC2_* / VISO_TYPE: in rupsha_extnav.parm. Pre-arm validates EVERY source
+# set (AP_NavEKF_Source.cpp), so a set 2 that names ExtNav without VISO_TYPE
+# blocks arming even while set 1 (GPS) is the active one.
+# BATT_MONITOR: power module not identified yet. [BLOCKED]
+# FENCE_ENABLE: off until a field with a known boundary.

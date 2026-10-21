@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use Rupsha, or any measurement out of its ledger, please cite it."
+title: "Rupsha: an autonomy stack for ground rovers"
+abstract: >-
+  A ROS 2 control, mission and perception stack for an autonomous ground rover:
+  reflexes on a Pixhawk running ArduRover, thinking on a Raspberry Pi, one
+  manifest that generates every verb and message, and a measurement ledger in
+  which every shipped number names what measured it. Built on the fundamentals
+  of the Mongla AUV stack. Nothing in this stack has driven outdoors yet.
+type: software
+license: MIT
+repository-code: "https://github.com/fh1m/rupsha_ws"
+date-released: "2026-10-21"
+keywords:
+  - mobile robotics
+  - ground rover
+  - ROS 2
+  - ArduPilot
+  - autonomy
+  - University Rover Challenge
+authors:
+  - family-names: Faisal
+    given-names: Muhammad Fahim
+    alias: fh1m
+    email: fh1m.dev@gmail.com
+    city: Dhaka
+    country: BD

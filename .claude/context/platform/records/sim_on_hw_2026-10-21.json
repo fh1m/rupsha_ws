@@ -1,0 +1,29 @@
+{
+ "what": "ArduRover 4.7.2 Sim-on-Hardware on the Pixhawk 2.4.8 (Pixhawk1, STM32F427)",
+ "build": "Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board Pixhawk1 --vehicle rover --frame rover-skid",
+ "toolchain": "arm-none-eabi-gcc 13.2.1 (Ubuntu 24.04 apt)",
+ "flash_used_bytes": 1323304,
+ "flash_free_bytes": 757440,
+ "flashed": true,
+ "boots": true,
+ "simulated_gps": "detected SITL GPS, 3D fix, 15 sats",
+ "ekf3": "IMU0 and IMU1 using GPS",
+ "imus_registered": ["SITL bus 0 (2752772)", "SITL bus 1 (2752780)"],
+ "imu_health": "gyro and accel present but unhealthy in SYS_STATUS on every attempt",
+ "prearm": "PreArm: Gyros not healthy",
+ "attempts": [
+  {"params": "board params kept (as flashed)", "loop_hz": 50, "result": "Gyros not healthy"},
+  {"params": "wiped; documented sim defaults", "loop_hz": 400, "cpu_load_pct": 26.7, "result": "Gyros not healthy"},
+  {"params": "wiped + SCHED_LOOP_RATE/SIM_RATE_HZ 200, FS_THR_ENABLE 0", "loop_hz": 200, "cpu_load_pct": 17.5, "result": "Gyros not healthy"},
+  {"params": "wiped + SCHED_LOOP_RATE/SIM_RATE_HZ 50, FS_THR_ENABLE 0", "loop_hz": 50, "cpu_load_pct": 8.1, "result": "Gyros not healthy"}
+ ],
+ "armed": false,
+ "verdict": "fits and runs on fmu-v3; does not arm (simulated IMUs never healthy) -- not pursued further",
+ "restored": {
+  "firmware": "official ArduRover 4.7.2 Pixhawk1 apj, git fb773567",
+  "params": "wiped, then the pre-flash dump re-applied in two passes (IDs, counters and boot-measured values excluded)",
+  "accel_calibration": "identical (INS_ACC_ID 1246218, offsets and scales equal)",
+  "baseline_audit": "21 expected, 0 differ",
+  "bench_tests": "pytest -m board: 6 passed"
+ }
+}

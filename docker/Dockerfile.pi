@@ -1,0 +1,82 @@
+# rupsha_pi -- Raspberry Pi 4B+ (arm64) dev/runtime image
+# Same ROS 2 Jazzy + MAVROS/Nav2/GStreamer stack as rupsha_dev (laptop), minus CUDA/torch.
+# Build ON the Pi: docker build -t rupsha_pi:jazzy -f docker/Dockerfile.pi docker/
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    ROS_DISTRO=jazzy \
+    RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+    ROS_DOMAIN_ID=43 \
+    ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET \
+    VIRTUAL_ENV=/opt/rupsha-venv \
+    PATH=/opt/rupsha-venv/bin:$PATH
+
+RUN printf 'Acquire::Retries "10";\nAcquire::http::Timeout "30";\n' > /etc/apt/apt.conf.d/80-retries
+
+RUN (userdel -r ubuntu || true) && (groupdel ubuntu || true)
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates curl gnupg locales software-properties-common \
+  && locale-gen en_US.UTF-8 \
+  && add-apt-repository -y universe \
+  && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
+  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu noble main" > /etc/apt/sources.list.d/ros2.list \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ros-jazzy-ros-base \
+      ros-dev-tools \
+      python3-colcon-common-extensions \
+      python3-rosdep python3-vcstool python3-venv python3-pip python3-opencv \
+      ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-cyclonedds \
+      ros-jazzy-mavros ros-jazzy-mavros-extras \
+      ros-jazzy-navigation2 ros-jazzy-nav2-bringup \
+      ros-jazzy-robot-localization \
+      ros-jazzy-cv-bridge ros-jazzy-image-transport-plugins \
+      ros-jazzy-joy ros-jazzy-teleop-twist-joy \
+      ros-jazzy-diagnostic-updater ros-jazzy-tf2-tools \
+      gstreamer1.0-tools gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
+      gstreamer1.0-plugins-ugly gstreamer1.0-libav \
+      v4l-utils usbutils pciutils can-utils minicom screen picocom \
+      udev i2c-tools libi2c-dev \
+      git git-lfs cmake ninja-build ccache gdb \
+      libeigen3-dev libyaml-cpp-dev \
+  && rosdep init 2>/dev/null || true \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m venv --system-site-packages ${VIRTUAL_ENV} \
+  && ${VIRTUAL_ENV}/bin/pip install --no-cache-dir --upgrade pip \
+  && ${VIRTUAL_ENV}/bin/pip install --no-cache-dir \
+      pymavlink MAVProxy pyserial numpy scipy pyyaml pytest
+
+RUN /opt/ros/jazzy/share/mavros/install_geographiclib_datasets.sh || true
+
+RUN printf '%s\n' \
+  'source /opt/ros/jazzy/setup.bash' \
+  '[ -f "$HOME/tmp/rupsha_ws/install/setup.bash" ] && source "$HOME/tmp/rupsha_ws/install/setup.bash"' \
+  'export VIRTUAL_ENV=/opt/rupsha-venv' \
+  'export PATH=/opt/rupsha-venv/bin:$PATH' \
+  > /etc/profile.d/rupsha.sh
+
+# Project must-haves (CPU side): SLAM/localization/control/sensors/geometry/optimisation
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ros-jazzy-slam-toolbox ros-jazzy-rtabmap-ros ros-jazzy-octomap-ros \
+      ros-jazzy-ros2-control ros-jazzy-ros2-controllers \
+      ros-jazzy-foxglove-bridge ros-jazzy-rosbridge-server \
+      ros-jazzy-image-pipeline ros-jazzy-vision-opencv ros-jazzy-pcl-ros \
+      ros-jazzy-geographic-msgs ros-jazzy-robot-localization ros-jazzy-imu-filter-madgwick \
+      ros-jazzy-navigation2 ros-jazzy-nav2-bringup \
+      libgtsam-dev libceres-dev libgeographiclib-dev geographiclib-tools \
+      libpcl-dev libsuitesparse-dev libfmt-dev libspdlog-dev libzmq3-dev \
+      libtbb-dev libjsoncpp-dev libproj-dev libgdal-dev libhdf5-dev \
+      libopenblas-dev liblapack-dev libavformat-dev libswscale-dev libv4l-dev \
+      libprotobuf-dev protobuf-compiler libgtk-3-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN ${VIRTUAL_ENV}/bin/pip install --no-cache-dir scikit-image shapely pyproj \
+  && ${VIRTUAL_ENV}/bin/pip uninstall -y opencv-python opencv-python-headless opencv-contrib-python opencv-contrib-python-headless || true \
+  && ${VIRTUAL_ENV}/bin/pip install --no-cache-dir "numpy<2"
+
+CMD ["bash"]

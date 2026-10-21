@@ -1,0 +1,74 @@
+{
+ "heartbeat": {
+  "mavpackettype": "HEARTBEAT",
+  "type": 10,
+  "autopilot": 3,
+  "base_mode": 1,
+  "custom_mode": 4,
+  "system_status": 5,
+  "mavlink_version": 3
+ },
+ "autopilot_version": {
+  "mavpackettype": "AUTOPILOT_VERSION",
+  "capabilities": 61935,
+  "flight_sw_version": 67568383,
+  "middleware_sw_version": 0,
+  "os_sw_version": 0,
+  "board_version": 589824,
+  "flight_custom_version": [
+   102,
+   98,
+   55,
+   55,
+   51,
+   53,
+   54,
+   55
+  ],
+  "middleware_custom_version": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "os_custom_version": [
+   100,
+   49,
+   48,
+   51,
+   57,
+   56,
+   51,
+   102
+  ],
+  "vendor_id": 4617,
+  "product_id": 22337,
+  "uid": 0,
+  "uid2": [
+   45,
+   0,
+   82,
+   0,
+   4,
+   81,
+   51,
+   50,
+   57,
+   57,
+   54,
+   48,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ "param_count": 858,
+ "captured": "2026-10-21T12:10:40+0600"
+}

@@ -1,0 +1,17 @@
+# rupsha_extnav.parm -- OPT-IN. EKF3 source set 2 = external navigation from the
+# Pi (MAVLink ODOMETRY, sent by rupsha_control from rupsha_localization's output).
+#
+# Apply on top of rupsha_baseline.parm, then REBOOT (VISO_TYPE is read at boot).
+# Switch at runtime with the verb `set_ekf_source extnav` / `gps`; the verb
+# refuses while VISO_TYPE is 0, which is the state this file changes.
+#
+# Set 1 (GPS) stays the boot default. Arming checks every set, so this file must
+# only be loaded on a board whose Pi will actually publish odometry.
+VISO_TYPE,1
+EK3_SRC2_POSXY,6
+EK3_SRC2_VELXY,6
+EK3_SRC2_POSZ,1
+EK3_SRC2_VELZ,0
+EK3_SRC2_YAW,1
+# Allow the Pi's MAVLink set-source command to drive the switch.
+EK3_SRC_OPTIONS,0

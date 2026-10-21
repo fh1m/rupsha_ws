@@ -1,0 +1,28 @@
+# rupsha_vision defaults. Every key is a parameter of the `vision` node; all but
+# `enabled` are read-only after start.
+vision:
+  ros__parameters:
+    enabled: true
+
+    # ArUco -- URC posts: 4x4_50, 0.20 m black square (outer edge).
+    dictionary: DICT_4X4_50
+    marker_size_m: 0.20
+    min_side_px: 16             # Aruco3 canonical side, 12..16; lower sees farther, decodes worse
+    ambiguity_threshold: 0.6    # IPPE err_best/err_second above which the flip tracker decides
+    pose_memory_s: 1.0          # per-tag flip memory, in frame-stamp seconds
+
+    # Objects -- '' disables them (logged loudly at start). Export with:
+    #   yolo export model=yolo11n.pt format=onnx imgsz=320
+    model_path: ''
+    class_names_path: ''        # '' = names from the ONNX metadata (Ultralytics embeds them)
+    input_size: 320
+    conf_threshold: 0.35
+    iou_threshold: 0.45
+    class_heights_m: ''         # 'name:height_m,...'; coarse pinhole range for those classes only
+
+    # Camera. Without a calibrated camera_info, range is NaN. A nominal FOV
+    # here gives coarse bearings only (0.0 = bearings NaN too).
+    fallback_hfov_deg: 0.0
+
+    # What runs before the executive has published a state (bench, teleop).
+    phase_without_status: search

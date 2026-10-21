@@ -1,0 +1,12 @@
+# rupsha_manager -- the one node that owns the Pixhawk.
+# Pixhawk1-BL clones enumerate as usb-ArduPilot_Pixhawk1*; the glob survives
+# the -if00 suffix and a board swap. Override per run:
+#   ros2 launch rupsha_control bringup.launch.py url:=tcp:127.0.0.1:5760
+rupsha_manager:
+  ros__parameters:
+    url: /dev/serial/by-id/usb-ArduPilot_Pixhawk1*
+    baud: 115200
+    state_hz: 10.0
+    # Send /rupsha/localization/odometry to the board as ODOMETRY (VISO_TYPE 1).
+    # Only with rupsha_extnav.parm loaded and EK3_SRC2_* selected; off by default.
+    extnav_uplink: false

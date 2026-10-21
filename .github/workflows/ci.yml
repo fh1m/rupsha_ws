@@ -1,0 +1,83 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ROS_DISTRO: jazzy
+  ARDUPILOT_TAG: Rover-4.7.2
+  PIP_BREAK_SYSTEM_PACKAGES: "1"
+
+jobs:
+  test:
+    name: lint, manifest, build, pytest
+    runs-on: ubuntu-24.04
+    # Ubuntu's apt OpenCV (4.6), the same as the Pi's
+    container: ros:jazzy-ros-base
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3-pip python3-opencv python3-numpy \
+            python3-yaml python3-serial python3-pytest ros-jazzy-cv-bridge ros-jazzy-diagnostic-msgs \
+            ros-jazzy-nav-msgs ros-jazzy-sensor-msgs
+          pip install pymavlink onnxruntime onnx ruff
+      - name: ruff
+        run: ruff check .
+      - name: manifest outputs are fresh
+        run: python3 tools/gen_manifest.py --check
+      - name: build
+        run: RUPSHA_NO_SIM=1 ./build_rupsha.sh
+      - name: pytest
+        run: |
+          source install/setup.bash
+          python3 -m pytest -q -ra
+
+  sitl:
+    name: ArduRover SITL scenarios
+    runs-on: ubuntu-24.04
+    needs: test
+    container: ros:jazzy-ros-base
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3-pip python3-opencv python3-numpy \
+            python3-yaml python3-serial python3-pytest ros-jazzy-cv-bridge ros-jazzy-diagnostic-msgs \
+            ros-jazzy-nav-msgs ros-jazzy-sensor-msgs git g++ make
+          pip install pymavlink onnxruntime empy==3.3.4 pexpect future
+      - name: ArduPilot SITL cache
+        id: ap-cache
+        uses: actions/cache@v4
+        with:
+          path: ardupilot
+          key: ardupilot-sitl-${{ env.ARDUPILOT_TAG }}-v1
+      - name: build ArduRover SITL
+        if: steps.ap-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch "$ARDUPILOT_TAG" --recurse-submodules --shallow-submodules \
+            https://github.com/ArduPilot/ardupilot.git
+          cd ardupilot
+          ./waf configure --board sitl
+          ./waf rover
+      - name: build
+        run: RUPSHA_NO_SIM=1 ./build_rupsha.sh
+      - name: SITL scenarios
+        run: |
+          test -x ardupilot/build/sitl/bin/ardurover   # the scenarios skip without it; here that is a failure
+          source install/setup.bash
+          ARDUPILOT_HOME="$PWD/ardupilot" python3 -m pytest -q -ra -m sitl src/rupsha_sim

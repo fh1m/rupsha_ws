@@ -1,0 +1,39 @@
+# rupsha_localization -- the shadow estimator. Names match PARAMETERS in
+# localization_node.py; a key here that the node does not declare is ignored by
+# rclpy, so keep the two in step.
+localization:
+  ros__parameters:
+    rate_hz: 20.0
+
+    # Skid-steer geometry. icr_chi = 1.0 is ideal differential drive and is
+    # UNMEASURED: fit it with icr_odometry.fit_icr on logged ground truth for
+    # this rover on this surface before trusting wheel odometry.
+    track_m: 0.60
+    icr_chi: 1.0
+
+    # Slip gate: |gyro - wheel yaw rate| over this for slip_k samples in a row.
+    # Only active when /rupsha/wheel_speeds exists (not on current hardware).
+    slip_threshold_dps: 15.0
+    slip_k: 3
+    slip_inflation: 10.0
+
+    # ExtNav uplink candidate. OFF by default: ArduPilot pre-arm checks validate
+    # every EK3 source set, so a set 2 = ExtNav configuration without VISO_TYPE
+    # blocks arming even when set 1 (GPS) is the active one.
+    extnav_enabled: false
+    extnav_max_std_m: 2.0
+
+    gnss_std_m: 1.5             # used only when NavSatFix carries no covariance
+    heading_from_board: true    # board yaw as a heading measurement (not independent)
+    heading_std_deg: 5.0
+    heading_period_s: 1.0
+
+    health_max_position_m: 5.0
+    health_max_yaw_deg: 15.0
+    health_period_s: 1.0
+
+    # Process noise DENSITIES (per sqrt(Hz)). Per-sample std at rate f = density * sqrt(f).
+    noise_speed: 0.02
+    noise_lateral: 0.02
+    noise_gyro: 0.003
+    noise_bias_walk: 0.0001

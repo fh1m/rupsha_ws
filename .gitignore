@@ -1,0 +1,32 @@
+# colcon
+build/
+install/
+log/
+
+# third-party checkouts (rupsha.repos) and local builds
+src/external/
+third_party/
+
+# run artefacts
+logs/
+*.log
+*.mcap
+*.db3
+*.tlog
+*.BIN
+eeprom.bin
+mav.parm
+*.jpg
+!src/rupsha_sim/models/**/*.jpg
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# editors / agents
+.cursor/
+.vscode/
+*.swp
