@@ -44,6 +44,7 @@ explained ([measured-bars §3](measured-bars.md#3-gazebo-harmonic--sitl-lockstep
 
 | # | Bug | Fix | Pinned by |
 |---|---|---|---|
+| B-26 | Vision published tags as `label "aruco"`, confidence NaN; `Detection.msg` says `"tag"`, 1.0, and the executive, facade and DSL select on `"tag"` — a marker leg would never see its post. Each side's unit tests used its own assumption | vision follows the message | `test_detection_contract.py` (the message, the publisher and every consumer) |
 | B-21 | `cv2.aruco.ArucoDetector` segfaults on OpenCV 4.6 (the Pi's and CI's apt build); the laptop's 4.13 hid it | below 4.7, detection goes through the legacy `detectMarkers` + `DetectorParameters_create` | `test_aruco_legacy_api.py`; the full suite in `ros:jazzy-ros-base` with apt 4.6 (390 pass) |
 | B-07 | Missions aborted at exit with "terminate called without an active exception" | the client shuts down its executor, joins its spin thread, destroys the node, then `try_shutdown` | mission runs in `tools/pil.sh` |
 | B-06 | `mission` exited 0 even when a verb failed | returns 1 on any failure | `test_mission_exit_code_reports_a_failed_verb` |

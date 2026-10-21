@@ -37,6 +37,7 @@ from .latency import LatencyWindow, e2e_ms
 from .mailbox import FrameMailbox
 
 _NAN = float('nan')
+TAG_LABEL = 'tag'
 _STATS_PERIOD_S = 10.0
 
 
@@ -64,11 +65,11 @@ def _fill_pose_absent(pose) -> None:
 def tag_to_msg(Detection, t: TagObservation):
     d = Detection()
     d.source = scheduler.ARUCO
-    d.label = scheduler.ARUCO
+    # Detection.msg: label "tag", confidence 1.0 for a decoded tag. The executive,
+    # the facade and the DSL select tags by this label.
+    d.label = TAG_LABEL
     d.tag_id = int(t.tag_id)
-    # ArUco produces no score; the decoded id with its Hamming check is the
-    # evidence. NaN says "not computed", which 1.0 would not.
-    d.confidence = _NAN
+    d.confidence = 1.0
     d.u, d.v = float(t.u), float(t.v)
     d.width_px, d.height_px = float(t.width_px), float(t.height_px)
     d.bearing_deg = float(t.bearing_deg)

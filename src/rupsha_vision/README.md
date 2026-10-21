@@ -12,7 +12,8 @@ stamp.
 ## Rules this package keeps
 
 - **NaN means absent, never 0.** No calibration: `range_m` is NaN. No fx: `bearing_deg`
-  is NaN. ArUco has no score, so its `confidence` is NaN. A Detection without a metric
+  is NaN. A decoded tag is `label "tag"` with `confidence` 1.0, as `Detection.msg`
+  defines; the consumers select tags by that label. A Detection without a metric
   solve has a NaN `pose`.
 - **Pixel-native first.** `u, v, width_px, height_px` and `tag_id` need nothing but the
   image and are always filled. Bearing needs fx; range needs a calibration AND a known
