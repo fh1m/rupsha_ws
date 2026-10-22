@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 200" role="img">
+  <title>Companion silence to HOLD</title>
+  <rect width="880" height="200" fill="#000000"/>
+  <text x="28" y="32" fill="#e4e8ef" font-family="ui-sans-serif, sans-serif" font-size="20">The Pi goes quiet</text>
+  <line x1="80" y1="110" x2="800" y2="110" stroke="#2b3448" stroke-width="1.5"/>
+  <g font-family="ui-monospace, monospace" font-size="12" fill="#e4e8ef">
+    <line x1="80" y1="104" x2="80" y2="116" stroke="#e4e8ef"/>
+    <text x="80" y="136" text-anchor="middle">0</text>
+    <text x="80" y="88" text-anchor="middle" fill="#98a2b4">last heartbeat</text>
+    <line x1="400" y1="100" x2="400" y2="120" stroke="#f88701" stroke-width="2"/>
+    <text x="400" y="88" text-anchor="middle" fill="#f88701">2.0 s, GCS lost</text>
+    <text x="400" y="156" text-anchor="middle" fill="#7b8598">FS_GCS_TIMEOUT</text>
+    <line x1="640" y1="96" x2="640" y2="124" stroke="#ff0000" stroke-width="2"/>
+    <text x="640" y="78" text-anchor="middle" fill="#ff5747">3.5 s, board acts</text>
+    <text x="640" y="176" text-anchor="middle" fill="#7b8598">+ FS_TIMEOUT 1.5 s</text>
+    <circle cx="656" cy="110" r="6" fill="#ff0000"/>
+    <text x="720" y="96" fill="#ff5747">3.6 s</text>
+    <text x="720" y="114" fill="#ff5747">HOLD, seen</text>
+  </g>
+</svg>

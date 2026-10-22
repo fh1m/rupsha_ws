@@ -16,7 +16,7 @@ import signal
 import subprocess
 import time
 
-from . import contract
+from . import contract, model_gen, worldgen
 
 PKG = pathlib.Path(__file__).resolve().parent.parent
 PLUGIN = 'libArduPilotPlugin.so'
@@ -109,6 +109,28 @@ def truth(timeout: float = 5.0) -> tuple[float, float, float] | None:
         time.sleep(0.02)
     if not got:
         return None
-    p, q = got[-1].pose.position, got[-1].pose.orientation
+    p = got[-1].pose.position
+    return p.x, p.y, heading_from_quaternion(got[-1].pose.orientation)
+
+
+# Truth geometry for scorers: the camera on the model (model_gen) at the model's spawn
+# height (worldgen), and the centre of the tag face it sees on a post's cube.
+CAM_FORWARD_M, CAM_HEIGHT_M = model_gen.CAMERA_XYZ[0], 0.02 + 0.20 + 0.22
+CUBE_HALF_M = worldgen.MARKER_M * (worldgen.MARKER_PX + 2 * worldgen.QUIET_PX) / worldgen.MARKER_PX / 2
+TAG_CENTRE_Z_M = worldgen.POST_TOP_M + CUBE_HALF_M
+
+
+def heading_from_quaternion(q) -> float:
+    """Compass heading (0 = north, clockwise) of an ENU orientation with .w .x .y .z."""
     yaw_enu = math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
-    return p.x, p.y, (90.0 - math.degrees(yaw_enu)) % 360.0
+    return (90.0 - math.degrees(yaw_enu)) % 360.0
+
+
+def true_range(rover_e, rover_n, heading_deg, post_e, post_n) -> float:
+    """Camera to the centre of the post's tag face that faces it, from Gazebo's pose."""
+    yaw = math.radians(90.0 - heading_deg)
+    cam = (rover_e + CAM_FORWARD_M * math.cos(yaw), rover_n + CAM_FORWARD_M * math.sin(yaw), CAM_HEIGHT_M)
+    towards = (cam[0] - post_e, cam[1] - post_n)
+    face = max(((1, 0), (-1, 0), (0, 1), (0, -1)), key=lambda f: f[0] * towards[0] + f[1] * towards[1])
+    centre = (post_e + CUBE_HALF_M * face[0], post_n + CUBE_HALF_M * face[1], TAG_CENTRE_Z_M)
+    return math.dist(centre, cam)

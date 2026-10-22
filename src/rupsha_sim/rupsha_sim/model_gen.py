@@ -37,7 +37,11 @@ WHEEL_Y = 0.285
 WHEEL_MU = 0.9
 MAX_WHEEL_RADPS = 20.0             # +-20 rad/s at full throttle -> +-2 m/s
 CAMERA_XYZ = (0.33, 0.0, 0.42)
-CAMERA_PITCH_DEG = 8.0             # nose-down
+# Positive pitch in this SDF looks down. The post tag's centre is ~0.88 m up and
+# the camera is ~0.44 m up, so at the 1.5 m standoff the tag is ~17 deg above the
+# horizon. Nose-down put it on the top edge of the frame by the time the approach
+# stopped, and the verify window then saw only the pole.
+CAMERA_PITCH_DEG = -17.0
 
 
 def _inertia_box(m, x, y, z):

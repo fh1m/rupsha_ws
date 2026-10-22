@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 280" role="img">
+  <title>Reflexes on the Pixhawk, thinking on the Pi</title>
+  <rect width="880" height="280" fill="#000000"/>
+  <text x="28" y="32" fill="#e4e8ef" font-family="ui-sans-serif, sans-serif" font-size="20">Two computers, one cable</text>
+  <rect x="28" y="52" width="380" height="168" fill="#05070c" stroke="#ff0000" stroke-width="1.5"/>
+  <text x="44" y="78" fill="#ff5747" font-family="ui-sans-serif, sans-serif" font-size="16">Raspberry Pi 4, thinking</text>
+  <text x="44" y="104" fill="#e4e8ef" font-family="ui-sans-serif, sans-serif" font-size="13">see a tag, remember the legs, notice stuck</text>
+  <text x="44" y="126" fill="#e4e8ef" font-family="ui-sans-serif, sans-serif" font-size="13">one node speaks MAVLink, as sysid 245</text>
+  <text x="44" y="148" fill="#e4e8ef" font-family="ui-sans-serif, sans-serif" font-size="13">verbs on /rupsha/move, 10 Hz when steering</text>
+  <text x="44" y="170" fill="#98a2b4" font-family="ui-sans-serif, sans-serif" font-size="13">a slow frame must not starve the heartbeat</text>
+  <text x="44" y="200" fill="#7b8598" font-family="ui-monospace, monospace" font-size="11">bench tools speak as 246</text>
+  <rect x="472" y="52" width="380" height="168" fill="#05070c" stroke="#e4e8ef" stroke-width="1.5"/>
+  <text x="488" y="78" fill="#e4e8ef" font-family="ui-sans-serif, sans-serif" font-size="16">Pixhawk, ArduRover 4.7.2</text>
+  <text x="488" y="104" fill="#e4e8ef" font-family="ui-sans-serif, sans-serif" font-size="13">turn-rate and speed loops, skid mix</text>
+  <text x="488" y="126" fill="#e4e8ef" font-family="ui-sans-serif, sans-serif" font-size="13">EKF3, S-curves, every failsafe</text>
+  <text x="488" y="148" fill="#e4e8ef" font-family="ui-sans-serif, sans-serif" font-size="13">silence to HOLD, seen at 3.6 s in SITL</text>
+  <text x="488" y="170" fill="#e4e8ef" font-family="ui-sans-serif, sans-serif" font-size="13">a velocity stream dies 3 s after the last</text>
+  <text x="488" y="200" fill="#7b8598" font-family="ui-monospace, monospace" font-size="11">outputs 73 and 74, nothing armed</text>
+  <text x="440" y="140" text-anchor="middle" fill="#ff5747" font-family="ui-monospace, monospace" font-size="12">MAVLink</text>
+  <text x="28" y="252" fill="#98a2b4" font-family="ui-sans-serif, sans-serif" font-size="13">The Pi says where to go. The board decides how hard to push.</text>
+</svg>

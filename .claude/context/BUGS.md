@@ -5,9 +5,7 @@ same mistake cannot come back quietly. Newest first within each section.
 
 ## Open
 
-| # | Bug | Where | Status |
-|---|---|---|---|
-| B-32 | The full stack in Gazebo finds tag 3 but loses it during the approach (4 of 4 approaches across two runs, `LOST: target unseen 2 s`). The first sighting is at ~7 m, past the 6 m decode edge, often at ±30° bearing, so the rover pivots on a detection up to 0.5 s old | `rupsha.py` `vision_approach`, executive search → approach handover | open — candidates: steer to the tag's estimated world position instead of the last bearing, confirm N hits before approaching |
+None.
 
 The ArUco range reads ~3 % long in Gazebo, recorded and not yet explained
 ([measured-bars §3](measured-bars.md#3-gazebo-harmonic--sitl-lockstep-rupsha_skid-flat_ci)).
@@ -50,6 +48,8 @@ The ArUco range reads ~3 % long in Gazebo, recorded and not yet explained
 
 | # | Bug | Fix | Pinned by |
 |---|---|---|---|
+| B-33 | On wall time, Gazebo's image stamps are sim time, so every detection's latency was NaN and its age unknown. A tag the camera was looking at did not count as fresh | the vision node in `sim.launch.py` uses sim time, so capture and publish share one clock | `test_a_detection_with_no_age_is_not_fresh`; the marker leg logged 0 unstampable frames |
+| B-32 | The full stack found tag 3 and then lost it: the approach pivoted on a stale bearing, and a later retry threw away a good estimate and spiraled. A following attempt stopped at the estimate while the tag had left the top of the frame (camera 8° nose-down, tag centre ~0.88 m), so verify never saw it | the tag's position is estimated in the local frame from the pose at image time (10 fixes, 1/range², held 30 s). Search wants 3 frames and drives back to a confirmed estimate instead of spiraling. The approach steers on pixels inside 4.5 m and otherwise hands the board a point `standoff − WP_RADIUS` short of the estimate; it finishes when the camera is within `standoff + 0.25` m and the tag was seen this pass. The sim camera looks 17° up, at the tag at the 1.5 m standoff | `test_vision_approach_drives_to_the_estimated_tag_when_it_drops_out`, `test_a_close_centered_sighting_survives_the_tag_dropping_out`, `test_a_retry_drives_back_to_the_estimate_instead_of_spiraling`, `test_search_needs_three_frames_before_it_hands_over`; `test_gazebo_marker_leg.py` (headless, one run: `all 1 legs complete` in 30 s, camera 1.69 m from the tag face, body 2.09 m from the post) |
 | B-31 | "board link lost" mid-search with the Gazebo GUI open: the GUI drops the sim to 0.4x real time, SITL's 1 Hz HEARTBEAT then arrives every 2.5 s of wall time, past the 2 s stale bound | the link is alive on *any* message from the board; mode and armed still come from the last HEARTBEAT | `test_a_slow_sim_with_fresh_telemetry_is_alive`, `test_a_silent_board_is_dead` |
 | B-30 | `vision_approach` stopped the moment the tag dropped out; at the decode edge a stopped rover never gets the pixels back, so it reported LOST | drive on along the last bearing for up to half the last-seen gap, which can never cross the standoff | `test_vision_approach_closes_in_on_a_tag_seen_once_past_its_detection_range`, `test_coasting_on_a_lost_tag_never_crosses_the_standoff` |
 | B-29 | `sim.launch.py` had never run whole: SITL's log directory did not exist, the manager died on a refused link, the executive died on a timer firing before `exe` existed and on a 15 s wait for the manager | the launch creates the directory; the manager retries the link (`link_wait_s`, 0 = forever — the Pixhawk may boot after the Pi); the executive waits for the manager, then serves | `test_manager_link.py`; the full stack ran a marker leg in Gazebo |

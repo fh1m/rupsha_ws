@@ -6,7 +6,7 @@ cruise speed with a turn-then-go controller, velocity setpoints expire after 3 s
 like the real board, HOLD stops, disarm stops. Time only advances when the code
 under test sleeps, so a 120 s leg runs in milliseconds and runs the same way twice.
 
-Fault hooks (`stuck`, `link_alive`, `refuse_arm`, `slip`) let tests stage the
+Fault hooks (`stuck`, `link_alive`, `refuse_arm`, `local_position`) let tests stage the
 cases that matter instead of hoping the fake wanders into them.
 """
 
@@ -47,6 +47,7 @@ class FakeRover(FlightController):
         self.firmware = tuple(firmware)
         self.gps_fix = 3
         self.link_alive = True
+        self.local_position = True  # False: no EKF origin, LOCAL_POSITION_NED absent
         self.refuse_arm = ''
         self.stuck = False          # wheels turn, body does not move
         self.rocks = []             # (north, east, radius): motion INTO one is blocked
@@ -121,7 +122,8 @@ class FakeRover(FlightController):
                          yaw_deg=self.yaw, yaw_rate_dps=self.w, groundspeed=abs(self.actual_v),
                          vx_body=self.actual_v, gps_fix=self.gps_fix,
                          gps_sats=12 if self.gps_fix >= 3 else 0, ekf_ok=True, prearm_ok=True,
-                         north_m=self.north, east_m=self.east, stamp=self.clock.t,
+                         north_m=self.north if self.local_position else math.nan,
+                         east_m=self.east if self.local_position else math.nan, stamp=self.clock.t,
                          firmware=self.firmware)
 
     def send_heartbeat(self) -> None:

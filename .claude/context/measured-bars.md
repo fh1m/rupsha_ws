@@ -61,6 +61,20 @@ bar, |error| ≤ 5 % + 5 cm, was set before the first run.
   a 20 cm tag, so a URC-sized approach needs more pixels: a higher resolution, a narrower lens,
   or a bigger tag.
 - The test asserts only at 3 m and 4.5 m. The 6 m and 8 m rows are the detection limit.
+- Re-measured 2026-10-23 after the camera was pitched 17° up (it had been 8° down, and the tag
+  left the top of the frame at the standoff). One run, same stations: 4.5 m truth 4.710 m,
+  ArUco 4.878 m (+0.168 m, +3.6 %, 19.2 px, seen in 100 %); 3.0 m truth 3.056 m, ArUco 3.148 m
+  (+0.093 m, +3.0 %, 29.3 px, seen in 100 %). Still about 3 % long.
+
+**One marker leg, the whole stack** (`test_gazebo_marker_leg.py`, headless, one run,
+2026-10-23). GNSS to a point 6 m short of post 3, then search, approach and verify.
+
+| Quantity | Value | Bar |
+|---|---|---|
+| Executive detail | `all 1 legs complete` | the string the test requires |
+| Wall time of the leg | 30 s | budget 420 s |
+| Camera to the tag face, at the end | 1.69 m | ≤ standoff 1.5 + slack 1.0 = 2.5 m |
+| Closest the body came to the post centre | 2.09 m | ≥ 0.8 m |
 
 ## 4. Pi-in-the-loop (manager + mission on the Pi 4, SITL on the laptop)
 

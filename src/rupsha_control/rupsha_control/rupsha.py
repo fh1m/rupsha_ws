@@ -17,7 +17,8 @@ from __future__ import annotations
 import math
 import threading
 import time
-from dataclasses import dataclass
+from collections import deque
+from dataclasses import dataclass, field
 
 from . import geo
 from .fc.base import CommandRejected, Telemetry
@@ -38,6 +39,46 @@ SPIRAL_SPACING_M = 4.0        # ring spacing ~ the camera's reliable tag range
 SPIRAL_MIN_RADIUS_M = 1.0
 BOARD_POLL_HZ = 5.0
 GPS_FIX_MIN = 3
+
+# Where the target is, not where it was last seen (MRDT's first fallback, sota §9).
+# A 20 cm tag decodes reliably to 4.5 m on the 640x480 70 deg camera (measured-bars §3):
+# inside that the pixels steer; outside it the board drives to the estimated position.
+APPROACH_SERVO_RANGE_M = 4.5
+# The tag flickers inside 2 m on this camera (Gazebo, 2026-10-22: centered at 1.71 m,
+# then gone for 2 s). A sighting this close to the standoff is the arrival.
+APPROACH_NEAR_M = 0.25
+RETARGET_M = 0.3              # re-send a local target only when it moved this far
+POSE_HISTORY_S = 3.0
+POSE_MATCH_S = 0.15           # a stamp further than this outside the history has no pose
+ESTIMATE_FIXES = 10
+ESTIMATE_TTL_S = 30.0
+SEARCH_CONFIRM_HITS = 3       # distinct frames before the search hands over
+SEARCH_CONFIRM_RANGE_M = 4.0  # close to this range of the estimate to collect them
+SEARCH_CONFIRM_S = 15.0
+
+
+@dataclass(frozen=True)
+class _Target:
+    """A `_stream` setpoint that is a local position for the board, not a velocity."""
+    north: float
+    east: float
+
+
+@dataclass
+class _Estimate:
+    """A target's position in the local frame: the 1/range^2-weighted mean of its fixes."""
+    fixes: deque = field(default_factory=lambda: deque(maxlen=ESTIMATE_FIXES))
+    updated: float = NAN
+
+    def add(self, north, east, range_m, now):
+        self.fixes.append((north, east, 1.0 / max(range_m, 0.5) ** 2))
+        self.updated = now
+
+    @property
+    def position(self):
+        w = sum(f[2] for f in self.fixes)
+        return (sum(f[0] * f[2] for f in self.fixes) / w,
+                sum(f[1] * f[2] for f in self.fixes) / w)
 
 
 @dataclass
@@ -68,6 +109,13 @@ class Rupsha:
         # its own radius, so a verb radius smaller than it can never be met (SITL:
         # `drive` sat 2.0 m short for 30 s against WP_RADIUS=2). NaN = unread.
         self.board_wp_radius = NAN
+        # Camera ahead of the pose the board reports (body x, m). Geometry, not a
+        # reading: the Gazebo model's 0.33 m is set by sim.launch.py; the real rover's
+        # is unmeasured until the chassis exists.
+        self.camera_forward_m = 0.0
+        self._poses: deque = deque()     # (clock, north, east, yaw_deg), sampled every loop tick
+        self._estimates: dict = {}       # (target_name, tag_id) -> _Estimate
+        self._sent_target = None
         self._abort = threading.Event()
         self.progress = None          # optional callable(phase, fraction, line)
 
@@ -268,21 +316,39 @@ class Rupsha:
 
     # ── host-streamed verbs ──────────────────────────────────────────────────
     def _stream(self, verb, duration, setpoint_fn, t0) -> VerbResult:
-        """Stream `setpoint_fn(elapsed) -> (vx, yaw_rate) | VerbResult` at the verb's rate."""
+        """Stream `setpoint_fn(elapsed) -> (vx, yaw_rate) | _Target | VerbResult` at the verb's rate.
+
+        A `_Target` hands the board a local position and lets it drive (its S-curves,
+        its speed loop); it is re-sent only when it moves RETARGET_M. A position target
+        does not expire like a velocity stream, so the exit path still zeroes it.
+        """
         period = 1.0 / VERBS[verb]['stream_hz']
+        self._sent_target = None
         try:
             while True:
                 if self.aborted:
                     return self._done(Outcome.ABORTED, f'{verb}: aborted', t0)
-                if not self._tel().link_alive:
+                tel = self._tel()
+                if not tel.link_alive:
                     return self._done(Outcome.LOST, f'{verb}: board link lost', t0)
+                self._record_pose(tel)
                 elapsed = self.clock() - t0
                 if duration is not None and elapsed >= duration:
                     return self._done(Outcome.SUCCEEDED, f'{verb}: {elapsed:.1f} s', t0)
                 sp = setpoint_fn(elapsed)
                 if isinstance(sp, VerbResult):
                     return sp
-                self.fc.velocity_body(*sp)
+                if isinstance(sp, _Target):
+                    last = self._sent_target
+                    if last is None or math.hypot(sp.north - last.north, sp.east - last.east) > RETARGET_M:
+                        self.fc.target_local(sp.north, sp.east)
+                        self._sent_target = sp
+                        if self.log:
+                            self.log.info(f'[VERB ] {verb}: target N {sp.north:.2f} E {sp.east:.2f} '
+                                          f'from N {tel.north_m:.2f} E {tel.east_m:.2f}')
+                else:
+                    self._sent_target = None
+                    self.fc.velocity_body(*sp)
                 self.sleep(period)
         finally:
             self._zero()
@@ -357,11 +423,14 @@ class Rupsha:
 
     # ── vision verbs ─────────────────────────────────────────────────────────
     def _match(self, target_name: str, tag_id: int):
-        """Freshest detection that matches, or None. Empty name + tag_id -1 = any tag."""
+        """Freshest detection that matches, or None. Empty name + tag_id -1 = any tag.
+
+        A NaN stamp is not fresh: an observation whose age is unknown is absent.
+        """
         now = self.clock()
         best = None
         for d in self.vision():
-            if now - d.stamp > DETECTION_FRESH_S:
+            if not now - d.stamp <= DETECTION_FRESH_S:
                 continue
             if tag_id >= 0:
                 if d.tag_id != tag_id:
@@ -375,51 +444,199 @@ class Rupsha:
                 best = d
         return best
 
+    def _record_pose(self, tel: Telemetry) -> None:
+        if not (math.isfinite(tel.north_m) and math.isfinite(tel.east_m) and math.isfinite(tel.yaw_deg)):
+            return
+        now = self.clock()
+        self._poses.append((now, tel.north_m, tel.east_m, tel.yaw_deg))
+        while self._poses and now - self._poses[0][0] > POSE_HISTORY_S:
+            self._poses.popleft()
+
+    def _pose_at(self, t: float):
+        """(north, east, yaw_deg) at clock time `t`, interpolated; None outside the history."""
+        if not math.isfinite(t) or not self._poses:
+            return None
+        first, last = self._poses[0], self._poses[-1]
+        if t < first[0] - POSE_MATCH_S or t > last[0] + POSE_MATCH_S:
+            return None
+        if t <= first[0]:
+            return first[1:]
+        if t >= last[0]:
+            return last[1:]
+        for a, b in zip(self._poses, list(self._poses)[1:], strict=False):
+            if a[0] <= t <= b[0]:
+                f = (t - a[0]) / (b[0] - a[0]) if b[0] > a[0] else 0.0
+                yaw = (a[3] + f * geo.heading_error(b[3], a[3])) % 360.0
+                return a[1] + f * (b[1] - a[1]), a[2] + f * (b[2] - a[2]), yaw
+        return None
+
+    def _observe(self, key, hit) -> None:
+        """Fold one frame's detection into the target's local-frame estimate.
+
+        The rover pose is taken at the IMAGE time, not now: a bearing from a frame
+        0.4 s old, applied to a rover that has pivoted since, lands metres off.
+        """
+        pose = self._pose_at(hit.stamp)
+        if pose is None or not (math.isfinite(hit.range_m) and math.isfinite(hit.bearing_deg)):
+            return
+        n, e, yaw = pose
+        y = math.radians(yaw)
+        cn, ce = n + self.camera_forward_m * math.cos(y), e + self.camera_forward_m * math.sin(y)
+        h = math.radians(yaw + hit.bearing_deg)
+        est = self._estimates.setdefault(key, _Estimate())
+        fn, fe = cn + hit.range_m * math.cos(h), ce + hit.range_m * math.sin(h)
+        est.add(fn, fe, hit.range_m, self.clock())
+        if self.log:
+            en, ee = est.position
+            self.log.info(f'[TAG  ] {key}: {hit.range_m:.2f} m {hit.bearing_deg:+.1f} deg from '
+                          f'N {n:.2f} E {e:.2f} yaw {yaw:.0f} -> fix N {fn:.2f} E {fe:.2f}, '
+                          f'estimate N {en:.2f} E {ee:.2f} ({len(est.fixes)})')
+
+    def tag_estimate(self, target_name: str, tag_id: int):
+        """(north, east) of the target in the local frame, or None when there is none."""
+        est = self._estimates.get((target_name, tag_id))
+        if est is None or not est.fixes or not self.clock() - est.updated <= ESTIMATE_TTL_S:
+            return None
+        return est.position
+
+    def _toward(self, key, short_m: float):
+        """Setpoint toward the estimate: a local target `short_m` short of it, or a pivot
+        to face it when the rover is already that close. None when there is no estimate
+        or no local position. Second value: distance from the rover to the estimate."""
+        est = self.tag_estimate(*key)
+        tel = self._tel()
+        if est is None or not (math.isfinite(tel.north_m) and math.isfinite(tel.yaw_deg)):
+            return None, NAN
+        dn, de = est[0] - tel.north_m, est[1] - tel.east_m
+        d = math.hypot(dn, de)
+        err = geo.heading_error(math.degrees(math.atan2(de, dn)), tel.yaw_deg)
+        if d <= short_m + RETARGET_M:
+            if abs(err) <= TURN_TOL_DEG:
+                return (0.0, 0.0), d
+            return (0.0, max(-30.0, min(30.0, APPROACH_YAW_KP * err))), d
+        return _Target(est[0] - short_m * dn / d, est[1] - short_m * de / d), d
+
+    def _camera_range(self, key) -> float:
+        """Metres from the camera to the estimate, or NaN when either is unknown."""
+        est = self.tag_estimate(*key)
+        tel = self._tel()
+        if est is None or not (math.isfinite(tel.north_m) and math.isfinite(tel.yaw_deg)):
+            return NAN
+        y = math.radians(tel.yaw_deg)
+        cn = tel.north_m + self.camera_forward_m * math.cos(y)
+        ce = tel.east_m + self.camera_forward_m * math.sin(y)
+        return math.hypot(est[0] - cn, est[1] - ce)
+
     def search_spiral(self, radius: float, speed: float, target_name: str, tag_id: int,
                       timeout: float) -> VerbResult:
         t0 = self.clock()
         if (blocked := self._host_preflight()):
             return blocked
+        key = (target_name, tag_id)
+        # A retry keeps the estimate the failed approach just built. Wiping it is what
+        # sent the rover spiraling 10 m past the post (B-32, second Gazebo run).
+        s = {'prev': 0.0, 'spiral_s': 0.0, 'hits': 0, 'frame': NAN, 'confirm_since': None}
 
         def step(elapsed):
+            dt, s['prev'] = elapsed - s['prev'], elapsed
             hit = self._match(target_name, tag_id)
-            if hit is not None:
+            if hit is not None and hit.stamp != s['frame']:
+                s['frame'] = hit.stamp
+                s['hits'] += 1
+                self._observe(key, hit)
+                if s['confirm_since'] is None:
+                    s['confirm_since'] = elapsed
+            if s['hits'] >= SEARCH_CONFIRM_HITS:
                 return self._done(Outcome.SUCCEEDED,
-                                  f'search: saw {hit.label} {hit.tag_id} at {hit.bearing_deg:+.0f} deg',
+                                  f'search: saw {hit.label} {hit.tag_id} in {s["hits"]} frames, '
+                                  f'last at {hit.bearing_deg:+.0f} deg',
                                   t0, final=hit.range_m, err=hit.bearing_deg)
-            r = math.sqrt(SPIRAL_SPACING_M * abs(speed) * elapsed / math.pi)
-            if r > radius:
-                return self._done(Outcome.FAILED, f'search: nothing inside {radius:.0f} m', t0)
             if elapsed > timeout:
                 return self._done(Outcome.TIMEOUT, 'search: timed out', t0)
+            held = self._estimates.get(key)
+            if held is not None and len(held.fixes) >= SEARCH_CONFIRM_HITS:
+                sp, _ = self._toward(key, SEARCH_CONFIRM_RANGE_M)
+                if sp is not None:
+                    return sp
+            if s['confirm_since'] is not None:
+                # One frame at the decode edge is not a find: close in on where it
+                # was and look again. Nothing more in SEARCH_CONFIRM_S: it was not there.
+                if elapsed - s['confirm_since'] <= SEARCH_CONFIRM_S:
+                    sp, _ = self._toward(key, SEARCH_CONFIRM_RANGE_M)
+                    if sp is not None:
+                        return sp
+                s['confirm_since'], s['hits'] = None, 0
+                self._estimates.pop(key, None)
+            s['spiral_s'] += dt
+            r = math.sqrt(SPIRAL_SPACING_M * abs(speed) * s['spiral_s'] / math.pi)
+            if r > radius:
+                return self._done(Outcome.FAILED, f'search: nothing inside {radius:.0f} m', t0)
             return abs(speed), math.degrees(abs(speed) / max(SPIRAL_MIN_RADIUS_M, r))
         return self._stream('search_spiral', None, step, t0)
 
     def vision_approach(self, target_name: str, tag_id: int, standoff: float, speed: float,
                         timeout: float) -> VerbResult:
+        """Close on a target to `standoff`.
+
+        Inside APPROACH_SERVO_RANGE_M, steer on the pixels. Otherwise, drive the board
+        to a point short of the target's estimated position (MRDT's first fallback).
+        With no estimate (no local position), hold the last bearing for half the
+        last-seen gap (B-30), the only fallback left.
+        """
         t0 = self.clock()
         if (blocked := self._host_preflight()):
             return blocked
-        state = {'last_seen': self.clock(), 'close': 0, 'coast': 0.0, 'blind_m': 0.0, 'prev': 0.0}
+        key = (target_name, tag_id)
+        state = {'last_seen': self.clock(), 'close': 0, 'coast': 0.0, 'blind_m': 0.0, 'prev': 0.0,
+                 'frame': NAN, 'saw': False}
 
         def step(elapsed):
             hit = self._match(target_name, tag_id)
             now = self.clock()
             dt, state['prev'] = elapsed - state['prev'], elapsed
-            if hit is None:
-                # Near the detection limit the tag flickers, and closing in is what brings
-                # it back: hold the last bearing for up to half the last-seen gap.
-                state['blind_m'] -= state['coast'] * dt
-                if state['blind_m'] > 0.0:
-                    return state['coast'], 0.0
+            if hit is not None:
+                state['saw'] = True
+                if not math.isfinite(hit.range_m):
+                    return self._done(Outcome.FAILED,
+                                      'approach: no metric range (camera uncalibrated or size unknown)', t0)
+                state['last_seen'] = now
+                if hit.stamp != state['frame']:
+                    state['frame'] = hit.stamp
+                    self._observe(key, hit)
+            have_estimate = self.tag_estimate(*key) is not None
+            if hit is not None and (hit.range_m <= APPROACH_SERVO_RANGE_M or not have_estimate):
+                state['arrived'] = None
+                return servo(hit, elapsed)
+            state['close'] = 0
+            if elapsed > timeout:
+                return self._done(Outcome.TIMEOUT, 'approach: timed out', t0)
+            cam = self._camera_range(key)
+            # The board stops WP_RADIUS short of a position target, so the point we hand it
+            # is that much closer to the tag. `there` is the camera, not the board's arrival.
+            if have_estimate and math.isfinite(cam) and cam <= standoff + APPROACH_NEAR_M:
+                if state['saw']:
+                    return self._done(Outcome.SUCCEEDED,
+                                      f'approach: {cam:.2f} m from the estimate, tag seen this pass',
+                                      t0, final=cam, err=cam - standoff)
                 if now - state['last_seen'] > TARGET_LOST_S:
-                    return self._done(Outcome.LOST, f'approach: target unseen {TARGET_LOST_S:.0f} s', t0)
-                return 0.0, 0.0
-            state['last_seen'] = now
-            if not math.isfinite(hit.range_m):
-                return self._done(Outcome.FAILED,
-                                  'approach: no metric range (camera uncalibrated or size unknown)', t0)
-            gap = hit.range_m - standoff
+                    return self._done(Outcome.LOST,
+                                      f'approach: not seen at its estimated position '
+                                      f'for {TARGET_LOST_S:.0f} s', t0)
+            if have_estimate:
+                sp, _ = self._toward(key, max(0.3, standoff - self._wp_radius()))
+                if sp is not None:
+                    return sp
+            # Near the detection limit the tag flickers, and closing in is what brings
+            # it back: hold the last bearing for up to half the last-seen gap.
+            state['blind_m'] -= state['coast'] * dt
+            if state['blind_m'] > 0.0:
+                return state['coast'], 0.0
+            if now - state['last_seen'] > TARGET_LOST_S:
+                return self._done(Outcome.LOST, f'approach: target unseen {TARGET_LOST_S:.0f} s', t0)
+            return 0.0, 0.0
+
+        def servo(hit, elapsed):
+            gap = hit.range_m - (standoff + APPROACH_NEAR_M)
             if gap <= 0:
                 state['close'] += 1
                 if state['close'] >= APPROACH_CONFIRM_FRAMES:
@@ -438,6 +655,9 @@ class Rupsha:
             state['coast'], state['blind_m'] = v, 0.5 * gap
             return v, yaw_rate
         return self._stream('vision_approach', None, step, t0)
+
+    def _wp_radius(self) -> float:
+        return self.board_wp_radius if math.isfinite(self.board_wp_radius) else 0.0
 
     # ── settings ─────────────────────────────────────────────────────────────
     def set_ekf_source(self, target_name: str) -> VerbResult:

@@ -10,3 +10,7 @@ rupsha_manager:
     # Send /rupsha/localization/odometry to the board as ODOMETRY (VISO_TYPE 1).
     # Only with rupsha_extnav.parm loaded and EK3_SRC2_* selected; off by default.
     extnav_uplink: false
+    # Camera ahead of the board's reported position (body x, m), used to place a
+    # detected tag in the local frame. Unmeasured until the chassis exists; the
+    # Gazebo model's 0.33 m is set by rupsha_sim's sim.launch.py.
+    camera_forward_m: 0.0

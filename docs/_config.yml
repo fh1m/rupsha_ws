@@ -1,0 +1,10 @@
+title: Rupsha — an autonomy stack for a ground rover
+description: >-
+  A ROS 2 stack for a Pixhawk running ArduRover and a Raspberry Pi that does the
+  thinking. Every number on the page says which run measured it. Nothing here
+  has been outdoors.
+url: "https://fh1m.github.io"
+baseurl: "/rupsha_ws"
+# No theme. index.html is the front page; the two essays use _layouts/default.html.
+# A project site must set baseurl or relative_url links resolve to the domain root.
+markdown: kramdown

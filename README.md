@@ -6,7 +6,7 @@ this repository without the measurement that produced it.**
 
 [![ROS 2](https://img.shields.io/badge/ROS%202-Jazzy-blue)](#run-it) [![firmware](https://img.shields.io/badge/ArduRover-4.7.2-orange)](CLAUDE.md#1-the-vehicle) [![sim](https://img.shields.io/badge/sim-Gazebo%20Harmonic%20%2B%20SITL-6a5acd)](.claude/context/platform/sim-and-hitl.md) [![on the ground](https://img.shields.io/badge/on%20the%20ground-not%20yet-critical)](#what-is-true-today) [![licence](https://img.shields.io/badge/licence-MIT-lightgrey)](LICENSE)
 
-**[The Shift](docs/the-shift.md)** · **[Capability map](docs/capability-map.md)** · [Run it](#run-it) · [Fundamentals](#the-fundamentals) · [Docs](#documents)
+**[Figures](docs/index.html)** · **[The Shift](docs/the-shift.md)** · **[Capability map](docs/capability-map.md)** · [Run it](#run-it) · [A marker leg](#a-marker-leg) · [The book](.claude/context/README.md)
 
 ### The name
 
@@ -41,100 +41,240 @@ the chassis does not exist yet.
 | Gazebo 6WD lockstep: 1.00 m/s, heading held, `turn_to` without overshoot | BENCH (Gazebo) | `test_gazebo_lockstep.py`, checked against Gazebo's pose |
 | Pi-in-the-loop square drive, 0.73 m truth closure, 11.5 % CPU on the Pi | BENCH | `tools/pil.sh` |
 | Sim-on-Hardware: fits and boots on the Pixhawk, but its simulated IMUs never report healthy | **BLOCKED** | [record](.claude/context/platform/records/sim_on_hw_2026-10-21.json) |
-| ArUco range in Gazebo, rover driving itself to the post: ~3 % long, reach ~6 m for a 20 cm tag | BENCH (Gazebo) | `test_gazebo_aruco.py`, checked against Gazebo's pose |
-| Whole stack in Gazebo on a marker leg: GNSS leg → search → tag found; the approach still loses the tag | BENCH (Gazebo) / open | `sim.launch.py`, scored on Gazebo truth ([B-32](.claude/context/BUGS.md)) |
+| ArUco range in Gazebo: ~3 % long, reliable to 4.5 m, edge at 6 m, never at 8 m | BENCH (Gazebo) | `test_gazebo_aruco.py`, checked against Gazebo's pose |
+| Whole stack on a marker leg: GNSS → search → approach → verify, camera 1.69 m from the tag | BENCH (Gazebo) | `test_gazebo_marker_leg.py`, one headless run ([B-32](.claude/context/BUGS.md)) |
 | Autonomy executive: legs, stuck ladder, verification, detours | BUILT | 12 scenarios on a simulated-time fake board |
 | ArUco posts (OpenCV 4.6 and 4.13), YOLO objects, shadow RI-EKF | BUILT | truth tests on rendered scenes and known trajectories |
 | Anything on the ground, outdoors | BLOCKED | no chassis yet |
 
-Full map with every row's evidence: [`docs/capability-map.md`](docs/capability-map.md).
+Full map, every row's evidence: [`docs/capability-map.md`](docs/capability-map.md).
+Every number and the run that produced it: [`.claude/context/measured-bars.md`](.claude/context/measured-bars.md).
+The same figures, as the public page: [fh1m.github.io/rupsha_ws](https://fh1m.github.io/rupsha_ws/). Source is [`docs/`](docs/index.html).
+
+<p align="center"><img src="docs/assets/diagrams/range.svg" alt="How far a 20 cm tag is seen: never at 8 m, flickering at 6 m, every frame at 4.5 m and 3 m, about 3 percent long. The marker leg finished at 1.69 m." width="100%"></p>
 
 ---
 
-## The fundamentals
+## Who is this for
 
-These are Mongla's, kept on purpose:
-
-1. **One node touches the board.** `rupsha_control`'s manager is the only MAVLink speaker;
-   `fc/ardurover.py` is the only module that imports pymavlink, and a test enforces it.
-2. **One action, verbs.** Everything the rover does is a verb on `/rupsha/move` — `goto_gnss`,
-   `turn_to`, `vision_approach`, `search_spiral` — with a single result type. Mission code is
-   plain Python over those verbs: `rupsha.goto_gnss(lat, lon)`.
-3. **NaN means absent.** No reading defaults to zero. ABSENT is a verdict of its own.
-4. **Reflexes on the board, thinking on the companion.** ArduRover closes the turn-rate and speed
-   loops, mixes skid steering, follows S-curves, runs EKF3 and every failsafe. The Pi sends intent.
-5. **Truth tests.** Simulated runs are checked against the simulator's ground truth, never against
-   the estimate the rover navigated by.
-
-And from the [Missouri S&T Mars Rover Design Team](https://github.com/MissouriMRDT), URC
-champions, whose code we read end to end:
-
-6. **One manifest** ([`manifest/rupsha.yaml`](manifest/rupsha.yaml)) generates the messages,
-   the constants and the command reference. MRDT's `manifest.json` idea, made mechanical: stale
-   output fails CI, and no code holds a topic name as a string.
-7. **Legs are first-class** (`add_marker_leg`, `start_autonomy`), run by an explicit
-   `AutonomyState` machine with a **stuck ladder** (reverse; +65° and reverse; −65° and reverse;
-   STUCK) and **verify before success** (GNSS averaging, multi-frame tag confirmation).
+| If you are here to… | Start at |
+|---|---|
+| continue the work | [HANDOFF](.claude/context/HANDOFF.md), then the code it names |
+| see whether a claim is real | [capability map](docs/capability-map.md), then the test in that row |
+| run the stack in simulation | [Run it](#run-it), headless |
+| understand why the Pi does not drive the motors | [The Shift](docs/the-shift.md) |
+| touch the Pixhawk | [the board page](.claude/context/platform/ardurover-pixhawk.md). Compass calibration needs a person holding it |
 
 ---
 
-## Architecture
+## How the whole thing fits together
+
+Two computers, one cable. The Pixhawk closes the loops that must not stall. The Pi does the
+work that is allowed to take 40 ms one frame and 80 ms the next, as long as it is never wrong
+about being late.
+
+<p align="center"><img src="docs/assets/diagrams/split.svg" alt="The Pi thinks and speaks MAVLink as sysid 245. The Pixhawk runs ArduRover: rate loops, skid mix, EKF3, failsafes." width="100%"></p>
 
 ```mermaid
 flowchart LR
   manifest["manifest/rupsha.yaml"] -.->|codegen| pi
-  base[Base station] -->|"add_*_leg, start_autonomy"| exec
-  subgraph pi [Raspberry Pi 4 - thinking]
-    planner[rupsha_planner: DSL, missions, CLI] --> exec[executive: states, stuck ladder, verify]
-    exec -->|"/rupsha/move"| mgr[rupsha_control: manager]
+  base[Operator] -->|"add_*_leg, start_autonomy"| exec
+  subgraph pi [Raspberry Pi 4]
+    planner[rupsha_planner: DSL, missions, CLI] --> exec[executive]
+    exec -->|"/rupsha/move"| mgr[manager, the only MAVLink speaker]
     sensors[rupsha_sensors] --> vision[rupsha_vision: ArUco, YOLO]
     sensors --> loc[rupsha_localization: shadow RI-EKF]
     vision -->|"/rupsha/detections"| mgr
     loc -->|"ExtNav, opt-in"| mgr
   end
-  mgr -->|"MAVLink 2"| fc[Pixhawk: ArduRover 4.7.2]
+  mgr -->|"MAVLink 2, sysid 245"| fc[Pixhawk: ArduRover 4.7.2]
   fc -->|"rate and speed PIDs, EKF3, failsafes"| motors[skid outputs 73 and 74]
   subgraph sim [rupsha_sim]
     worldgen[seeded worldgen] --> gz[Gazebo Harmonic]
-    gz <-->|"JSON lockstep"| sitl[ArduRover SITL 4.7.2]
+    gz <-->|"JSON lockstep"| sitl[ArduRover SITL]
   end
   sitl -.->|"same manager, another URL"| mgr
 ```
 
+Exactly one node touches the board. A bug in a mission cannot write a motor command. Bench
+tools speak as sysid **246**. A tool that heartbeats as 245 and then exits latches the GCS
+failsafe: the LED flashes yellow, mode HOLD, until reboot or until 245 speaks again.
+
 | Package | What it is |
 |---|---|
 | `rupsha_interfaces` | `Move.action`, `RupshaState`, `AutonomyStatus` (generated), `Detection(s)` |
-| `rupsha_control` | the board driver, the verb facade, the manager node, `bringup_check`, `param_audit` |
-| `rupsha_planner` | the autonomy executive, the mission DSL, the `rupsha` CLI, missions |
-| `rupsha_vision` | ArUco posts with IPPE pose and flip disambiguation, ONNX YOLO, phase scheduling |
-| `rupsha_localization` | a shadow right-invariant EKF that cross-checks EKF3; opt-in ExtNav |
-| `rupsha_sensors` | one table of sensors → drivers, topics, minimum rates; `sensors_check` |
-| `rupsha_sim` | Gazebo worlds and model from seeded generators, SITL wrapper, sim contract, PIL |
+| `rupsha_control` | the board driver, the verb facade, the manager, `bringup_check`, `param_audit`, `compass_cal` |
+| `rupsha_planner` | the executive, the mission DSL, the `rupsha` CLI |
+| `rupsha_vision` | ArUco with pose and flip disambiguation, ONNX YOLO, a phase per autonomy state |
+| `rupsha_localization` | a shadow right-invariant EKF that cross-checks EKF3; ExtNav is opt-in |
+| `rupsha_sensors` | one table of sensors → drivers, topics, minimum rates |
+| `rupsha_sim` | Gazebo model and worlds from seeded generators, SITL, the sim contract, Pi-in-the-loop |
+
+### One verb, end to end
+
+`goto_gnss` is the shape of all of them. The operator names an intent. The manager checks the
+board. The Pixhawk drives. The result is one of seven outcomes, and a verb that did not happen
+says so.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Op as operator / mission
+    participant Ex as executive
+    participant Mg as manager
+    participant Fc as ArduRover
+    Op->>Ex: add_marker_leg, start_autonomy
+    Ex->>Mg: /rupsha/move  goto_gnss
+    Mg->>Mg: link alive, armed, GUIDED
+    Mg->>Fc: a position target
+    Fc->>Fc: S-curve, skid mix, the rate loops
+    Fc-->>Mg: distance falls, then holds inside WP_RADIUS
+    Mg-->>Ex: SUCCEEDED, arrived
+    Note over Ex: a marker leg does not end here.<br/>Search, approach, then verify.
+```
+
+### The Pi goes quiet
+
+<p align="center"><img src="docs/assets/diagrams/failsafe.svg" alt="Timeline from the last heartbeat: GCS lost at 2 seconds, the board acts at 3.5, HOLD seen in SITL at 3.6." width="100%"></p>
+
+A velocity command expires 3 s after the last one (`test_velocity_stream_drives_and_expires`).
+A companion that vanishes is HOLD, measured at 3.6 s. Both are the board's, which is why a
+stalled vision thread cannot leave the rover driving.
+
+---
+
+## The fundamentals
+
+These are Mongla's, kept on purpose. Each one is a rule a test can fail.
+
+1. **One node touches the board.** `rupsha_control`'s manager is the only MAVLink speaker;
+   `fc/ardurover.py` is the only module that imports pymavlink, and a test enforces it.
+2. **One action, verbs.** Everything the rover does is a verb on `/rupsha/move` — `goto_gnss`,
+   `turn_to`, `vision_approach`, `search_spiral` — with a single result type. A mission is
+   plain Python: `rupsha.goto_gnss(lat, lon)`.
+3. **NaN means absent.** No reading defaults to zero. A detection with no age is not fresh.
+4. **Reflexes on the board, thinking on the companion.** ArduRover closes the turn-rate and
+   speed loops, mixes skid steering, follows S-curves, runs EKF3 and every failsafe. The Pi
+   sends intent.
+5. **Truth tests.** A simulated run is scored on the simulator's ground truth, never on the
+   estimate the rover steered by. In Gazebo that topic is `/sim/ground_truth/odometry`.
+
+And from the [Missouri S&T Mars Rover Design Team](https://github.com/MissouriMRDT), whose
+code was read and not copied:
+
+6. **One manifest** ([`manifest/rupsha.yaml`](manifest/rupsha.yaml)) generates the messages,
+   the constants and the command reference. Stale output fails CI. No code holds a topic name
+   as a string.
+7. **Legs, a state machine, verify before success.** The executive queues GNSS points, marker
+   posts and objects. It will not call a leg done because the rover stopped nearby. A position
+   leg averages GNSS. A marker leg has to see the tag, inside the standoff plus one metre,
+   for most of a 1.5 s window.
+
+The research those rules came from, with the files they were read in:
+[sota](.claude/context/sota/README.md).
+
+---
+
+## A marker leg
+
+This is the loop the stack can run today, headless, in Gazebo. Post 3 of `flat_ci` carries a
+20 cm ArUco tag. The executive is sent to a GNSS point 6 m short of it. From there:
+
+```mermaid
+stateDiagram-v2
+    [*] --> NAVIGATING
+    NAVIGATING --> SEARCH_PATTERN: arrived
+    SEARCH_PATTERN --> APPROACHING_MARKER: 3 frames, or a held estimate
+    APPROACHING_MARKER --> VERIFYING_MARKER: camera within standoff + 0.25 m, tag seen
+    VERIFYING_MARKER --> [*]: tag still in view, range ≤ 2.5 m
+    VERIFYING_MARKER --> APPROACHING_MARKER: not verified, under the retry cap
+    APPROACHING_MARKER --> SEARCH_PATTERN: lost, under the retry cap
+    SEARCH_PATTERN --> REVERSING: stuck
+    REVERSING --> SEARCH_PATTERN
+```
+
+Search does not hand over on one lucky frame at the decode edge. Three distinct frames, or it
+drives in to 4 m of the estimate and looks again. A retry that already holds those three fixes
+drives back to them. It does not throw the estimate away and spiral.
+
+Inside 4.5 m the approach steers on the pixels. Farther out it hands the board a point in the
+local frame. The board stops `WP_RADIUS` (1.0 m) short of any point it is given, so the point
+is `standoff − 1.0` m from the tag and the board's own stop is the 1.5 m standoff.
+
+Each fix uses the rover's pose **at the image's capture time**, interpolated across a 3 s
+history, plus the camera's 0.33 m offset in the Gazebo model. A pose taken "now" while the
+rover is pivoting puts a 7 m fix more than a metre off.
+
+<p align="center"><img src="docs/assets/diagrams/approach.svg" alt="Side view at the end of the marker leg. The camera is 1.69 m from the tag and looks 17 degrees up. The old 8 degree downward pitch left the tag above the frame." width="100%"></p>
+
+The one headless run of `test_gazebo_marker_leg.py` finished in 30 s. The executive's detail
+was `all 1 legs complete`. Gazebo's pose put the camera 1.69 m from the tag face (the bar is
+2.5 m) and the body never came closer than 2.09 m to the post centre (the bar is 0.8 m).
+
+The camera used to look 8° down. At that pitch the tag's centre, 0.88 m up, sat on the top
+edge of the frame by the time the rover was close, and the verify window stared at the pole.
+It now looks 17° up, which puts that centre near the optical axis at the 1.5 m standoff.
+After the change, the 3 m and 4.5 m range stations still see the tag in every frame and still
+read about 3 % long ([measured bars §3](.claude/context/measured-bars.md#3-gazebo-harmonic--sitl-lockstep-rupsha_skid-flat_ci)).
 
 ---
 
 ## Run it
 
 ```bash
-./build_rupsha.sh && source install/setup.bash
-pytest                                                   # unit tests and repo guards
-pytest -m "sitl or gazebo" src/rupsha_sim                # closed loops against simulators
-ros2 launch rupsha_sim sim.launch.py world:=playpen      # Gazebo + SITL + the stack
-ros2 run rupsha_planner mission square_drive             # in another terminal
+# build, lint, everything that is not Gazebo
+sudo -u fh1m bash -lc 'cd /home/fh1m/tmp/rupsha_ws && source /opt/ros/jazzy/setup.bash && ./build_rupsha.sh && source install/setup.bash && /opt/rupsha-venv/bin/ruff check . && /opt/rupsha-venv/bin/python -m pytest -q -m "not gazebo"'
+
+# the closed loops. Headless. The Gazebo window drops the sim to about 0.4× real time
+# and is only for a person who wants to watch.
+sudo -u fh1m bash -lc 'cd /home/fh1m/tmp/rupsha_ws && source /opt/ros/jazzy/setup.bash && source install/setup.bash && export GZ_VERSION=harmonic && /opt/rupsha-venv/bin/python -m pytest -q -m gazebo src/rupsha_sim'
+
+# the whole stack, headless, flat_ci
+sudo -u fh1m bash -lc 'cd /home/fh1m/tmp/rupsha_ws && source /opt/ros/jazzy/setup.bash && source install/setup.bash && export GZ_VERSION=harmonic && ros2 launch rupsha_sim sim.launch.py headless:=true'
 ```
 
-On the rover: `ros2 launch rupsha_planner rupsha.launch.py`. Before that, with the Pixhawk on USB:
-`ros2 run rupsha_control bringup_check --bench`.
+With the Pixhawk on USB and nothing on the servo outputs:
+
+```bash
+ros2 run rupsha_control param_audit
+ros2 run rupsha_control bringup_check --bench
+pytest -m board src/rupsha_control
+```
+
+Do not arm with anything wired to the outputs. Do not open the bootloader port (its name
+contains `-BL`). Compass calibration is `ros2 run rupsha_control compass_cal --reboot`, and
+only while a person is holding the board.
+
+The Pi is down. Do not SSH it, and do not run `tools/pil.sh`, until it is back.
+
+---
+
+## What stands in the way
+
+| Block | What it waits on |
+|---|---|
+| Arming the real board | a person, for the onboard compass, and the safety switch |
+| Pi-in-the-loop | the Pi 4 is powered off |
+| Sim-on-Hardware | the simulated IMUs never report healthy; recorded, not to be re-flashed casually |
+| Anything FIELD | a chassis, motors, drivers, a battery |
+| RTK heading | two u-blox F9P receivers |
+
+The order from here is in [ROADMAP](.claude/context/ROADMAP.md). The next Gazebo run is a full
+`urc_autonomy` course, scored the same way as the marker leg.
 
 ---
 
 ## Documents
 
-- [`CLAUDE.md`](CLAUDE.md) — the entry point: vehicle, board traps, rules, how to run
-- [`docs/the-shift.md`](docs/the-shift.md) — why the work is split the way it is
+- [`docs/index.html`](docs/index.html) — the figures, with the sentence each one is for
+- [`docs/the-shift.md`](docs/the-shift.md) — reflexes on the board, thinking on the Pi
 - [`docs/capability-map.md`](docs/capability-map.md) — every capability, its evidence, its state
-- [`.claude/context/README.md`](.claude/context/README.md) — the book: every document in reading order
-- [`.claude/context/sota/README.md`](.claude/context/sota/README.md) — the research behind each choice, with sources
+- [`CLAUDE.md`](CLAUDE.md) — the vehicle, the traps, how to run
+- [`.claude/context/README.md`](.claude/context/README.md) — the book, in reading order
+- [`.claude/context/HANDOFF.md`](.claude/context/HANDOFF.md) — where the work is, for the next person
+- [`.claude/context/measured-bars.md`](.claude/context/measured-bars.md) — every number
+- [`.claude/context/sota/README.md`](.claude/context/sota/README.md) — what was read, and where
+- [`.claude/context/BUGS.md`](.claude/context/BUGS.md) — the defect register, open and fixed
 
 ## Authors
 

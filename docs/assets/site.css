@@ -1,0 +1,296 @@
+/* Rupsha, set in the same faces as Mongla.
+   Manrope for the name, Zed Sans for prose, Zed Mono for every number.
+   Noto Sans Bengali, subset to রূপসা. All OFL, self-hosted.
+   Colour is Mongla's: #000 ground, #ff0000 the measured mark, #ff5747
+   where that red has to be read as text. */
+
+@font-face {
+  font-family: "Manrope";
+  src: url("fonts/manrope-latin.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Zed Sans";
+  src: url("fonts/zed-sans-extended.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Zed Sans";
+  src: url("fonts/zed-sans-extendedbold.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Zed Sans";
+  src: url("fonts/zed-sans-extendeditalic.woff2") format("woff2");
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: "Zed Mono";
+  src: url("fonts/zed-mono-extended.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Zed Mono";
+  src: url("fonts/zed-mono-extendedbold.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Rupsha Bengali";
+  src: url("fonts/noto-bengali-rupsha.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+
+:root {
+  --d0: #000000;
+  --d1: #05070c;
+  --d2: #0a0e16;
+  --rule: #1a2030;
+  --rule-lit: #2b3448;
+  --ink: #e4e8ef;
+  --ink-2: #98a2b4;
+  --ink-3: #7b8598;
+  --signal: #ff0000;
+  --signal-text: #ff5747;
+  --caution: #f88701;
+  --display: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --prose: "Zed Sans", ui-sans-serif, system-ui, sans-serif;
+  --data: "Zed Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --fs-body: 15px;
+  --fs-lede: clamp(16px, 0.9rem + 0.3vw, 18px);
+  --wrap: 72rem;
+  --gutter: clamp(20px, 4vw, 64px);
+  --e1: inset 0 1px 0 rgba(255,255,255,.06), 0 0 0 1px rgba(0,0,0,.6), 0 10px 28px -12px rgba(0,0,0,.85);
+}
+
+* { box-sizing: border-box; }
+html { background: var(--d0); scroll-behavior: smooth; }
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--d0);
+  font-family: var(--prose);
+  font-size: var(--fs-body);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+::selection { background: var(--signal); color: #fff; }
+a { color: var(--signal-text); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: #fff; }
+img { max-width: 100%; height: auto; }
+code { font-family: var(--data); font-size: 0.92em; color: var(--ink); }
+
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  height: 56px;
+  background: #000;
+  border-bottom: 1px solid var(--rule);
+}
+.bar {
+  max-width: var(--wrap); margin: 0 auto; height: 56px;
+  padding: 0 var(--gutter);
+  display: flex; align-items: center; gap: 22px;
+}
+.home {
+  font-family: var(--display); font-weight: 700; letter-spacing: -0.03em;
+  color: var(--ink); text-decoration: none; font-size: 18px;
+}
+.home::before {
+  content: ""; display: inline-block; width: 7px; height: 7px;
+  background: var(--signal); margin-right: 10px; vertical-align: 2px;
+}
+.bar nav { margin-left: auto; display: flex; gap: 18px; }
+.bar nav a {
+  font-family: var(--data); font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-3); text-decoration: none;
+}
+.bar nav a:hover { color: var(--signal-text); }
+
+.wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
+
+.hero { padding: clamp(56px, 9vh, 104px) 0 8px; }
+.kicker {
+  font-family: var(--data); font-size: 11px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--ink-3); margin: 0 0 18px;
+}
+.kicker i { color: var(--signal-text); font-style: normal; }
+h1.title {
+  font-family: var(--display); font-weight: 700;
+  font-size: clamp(4.4rem, 1.2rem + 8vw, 7.6rem);
+  line-height: 0.86; letter-spacing: -0.045em;
+  margin: 0;
+}
+.title__bn {
+  display: block;
+  margin-top: 14px;
+  font-family: "Rupsha Bengali", sans-serif;
+  font-weight: 500;
+  font-size: 0.34em;
+  letter-spacing: 0;
+  line-height: 1;
+  color: var(--signal-text);
+}
+.origin {
+  font-family: var(--prose);
+  color: var(--ink-2);
+  max-width: 46rem;
+  margin: 28px 0 0;
+  font-size: var(--fs-lede);
+}
+.lede {
+  font-size: var(--fs-lede);
+  max-width: 40rem;
+  color: var(--ink);
+  margin-top: 14px;
+}
+
+.measures {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr;
+  gap: 10px;
+  margin: 42px 0 12px;
+}
+.measures article {
+  background: var(--d1);
+  box-shadow: var(--e1);
+  padding: 18px 18px 16px;
+  min-height: 10.5rem;
+}
+.measures .wide {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 24px;
+  align-items: end;
+}
+.measures .label {
+  font-family: var(--data); font-size: 10px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--signal-text); display: block; margin-bottom: 10px;
+}
+.measures b {
+  font-family: var(--data); font-weight: 400;
+  font-size: clamp(2.4rem, 1.2rem + 2.4vw, 3.6rem);
+  letter-spacing: -0.04em; display: block; line-height: 0.95;
+  color: var(--signal-text);
+}
+.measures b u {
+  text-decoration: none; font-size: 0.38em; letter-spacing: 0;
+  color: var(--ink-3); margin-left: 6px;
+}
+.measures span.note {
+  display: block; margin-top: 12px; color: var(--ink-2);
+  font-family: var(--prose); font-size: 14px; line-height: 1.5;
+}
+.measures .warn { grid-column: 1 / -1; }
+.measures .warn b { color: var(--signal); }
+.ticks { display: flex; gap: 3px; margin: 12px 0 0; }
+.ticks i { width: 2px; height: 16px; background: var(--signal); display: block; }
+
+.toc {
+  position: sticky; top: 56px; z-index: 30;
+  background: #000;
+  border-bottom: 1px solid var(--rule);
+}
+.toc .wrap {
+  display: flex; flex-wrap: wrap; gap: 8px 18px;
+  padding-top: 12px; padding-bottom: 12px;
+}
+.toc a {
+  font-family: var(--data); font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-3); text-decoration: none;
+}
+.toc a[aria-current="true"] { color: var(--signal-text); }
+section[id] { scroll-margin-top: 128px; }
+
+.chapter {
+  display: grid; grid-template-columns: 3.2rem 1fr; gap: 8px 16px;
+  align-items: baseline; padding: 72px 0 6px;
+}
+.chapter .no {
+  font-family: var(--data); color: var(--signal); font-size: 12px; letter-spacing: 0.14em;
+}
+.chapter h2 {
+  font-family: var(--display); font-weight: 650; letter-spacing: -0.03em;
+  font-size: clamp(2rem, 1rem + 2.2vw, 3rem); margin: 0; line-height: 1.05;
+}
+.chapter .sub {
+  grid-column: 2; margin: 6px 0 0;
+  font-family: var(--data); font-size: 12px; letter-spacing: 0.04em; color: var(--ink-3);
+}
+.hair { border: 0; border-top: 1px solid var(--rule); margin: 14px 0 0; }
+
+section.block { padding: 22px 0 8px; }
+section.block > .wrap > p,
+section.block p { max-width: 46rem; }
+figure { margin: 28px 0 6px; }
+figure img {
+  display: block; width: 100%; background: #000;
+  border: 1px solid var(--rule);
+}
+figcaption {
+  color: var(--ink-2); font-size: 14px; margin-top: 12px; max-width: 46rem;
+}
+
+table.ledger { width: 100%; border-collapse: collapse; margin: 22px 0 8px; }
+table.ledger th {
+  font-family: var(--data); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-3); font-weight: 400;
+  text-align: left; padding: 0 18px 10px 0; border-bottom: 1px solid var(--rule-lit);
+}
+table.ledger td {
+  padding: 14px 18px 14px 0; border-bottom: 1px solid var(--rule);
+  vertical-align: top; color: var(--ink-2); font-size: 14.5px;
+}
+table.ledger td:first-child { color: var(--ink); font-family: var(--prose); }
+table.ledger td.num { font-family: var(--data); font-size: 12.5px; color: var(--signal-text); }
+
+.states {
+  font-family: var(--data); font-size: 12.5px; line-height: 1.65;
+  background: var(--d1); box-shadow: var(--e1);
+  padding: 18px 20px; overflow-x: auto; color: var(--ink-2); margin: 18px 0;
+}
+
+.colophon {
+  max-width: var(--wrap); margin: 64px auto 0; padding: 22px var(--gutter) 48px;
+  border-top: 1px solid var(--rule);
+  display: flex; gap: 22px; flex-wrap: wrap;
+  color: var(--ink-3); font-family: var(--data); font-size: 11px; letter-spacing: 0.08em;
+}
+
+body.doc main {
+  max-width: var(--wrap); margin: 0 auto;
+  padding: clamp(40px, 6vh, 80px) var(--gutter) 64px;
+}
+body.doc h1 {
+  font-family: var(--display); font-weight: 700; letter-spacing: -0.04em;
+  font-size: clamp(2.4rem, 1rem + 3.4vw, 4rem); margin: 0 0 16px; line-height: 0.95;
+}
+body.doc h2 {
+  font-family: var(--display); font-weight: 650; letter-spacing: -0.03em;
+  font-size: clamp(1.5rem, 1rem + 1.2vw, 2.1rem);
+  margin: 2.6rem 0 0.8rem; padding-top: 1.4rem; border-top: 1px solid var(--rule);
+}
+body.doc h3 { font-family: var(--display); font-weight: 650; font-size: 1.2rem; margin: 1.6rem 0 0.4rem; }
+body.doc p { margin: 0 0 0.95rem; max-width: 68ch; }
+body.doc li { margin: 0.3rem 0; }
+body.doc img { display: block; width: 100%; margin: 1.2rem 0; background: #000; border: 1px solid var(--rule); }
+body.doc table { border-collapse: collapse; font-family: var(--data); font-size: 12px; }
+body.doc th, body.doc td {
+  text-align: left; padding: 10px 16px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top;
+}
+body.doc th {
+  color: var(--ink-3); font-weight: 400; letter-spacing: 0.12em;
+  text-transform: uppercase; font-size: 10px;
+}
+body.doc td { color: var(--ink-2); }
+body.doc strong { color: var(--ink); }
+body.doc .tw { overflow-x: auto; margin: 1rem 0; }
+
+@media (max-width: 800px) {
+  .measures { grid-template-columns: 1fr; }
+  .measures .wide { grid-template-columns: 1fr; }
+  .chapter { grid-template-columns: 1fr; }
+  .chapter .sub { grid-column: 1; }
+}

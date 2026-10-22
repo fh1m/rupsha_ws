@@ -164,36 +164,97 @@ Sources: [REP-2000](https://www.ros.org/reps/rep-2000.html) ·
 
 ## 9. How the teams that win URC approach a marker
 
-Read on 2026-10-22, from the current code, because [B-32](../BUGS.md) is exactly this problem:
-Rupsha finds the tag at the edge of detection and then loses it. Two verified techniques; the
-rest of the survey (BYU, Waterloo, the Polish teams) was not finished.
+Read on 2026-10-22, from the current code, because [B-32](../BUGS.md) was exactly this problem:
+Rupsha found the tag at the edge of detection and then lost it. The fix is in the tree; the
+headless marker leg now finishes. Every claim below was read in the
+team's own source on that date; nothing was copied. MRDT is the team Rupsha measures itself
+against: its states, leg queue and stuck ladder are already the shape of
+[`executive.py`](../../../src/rupsha_planner/rupsha_planner/executive.py).
 
-**Missouri S&T MRDT** keeps a geolocated position of the tag and, when the camera loses it,
-drives to that position rather than to the last pixel bearing. Only with no position history do
-they coast on the last heading — which is what Rupsha does today (B-30), and it is their
-*second* fallback.
+**Missouri S&T MRDT** ([Autonomy_Software](https://github.com/MissouriMRDT/Autonomy_Software)).
+- *Keep where the tag is, not where it was seen.* Each ArUco detection carries a geolocated UTM
+  position. When the camera loses the tag, the rover drives to that position; only with no
+  position history does it coast on the last heading
+  ([`ApproachingMarkerState.cpp`](https://github.com/MissouriMRDT/Autonomy_Software/blob/main/src/states/ApproachingMarkerState.cpp)):
 
-```text
-[FALLBACK 1] Visual lost. Driving to last known geolocated UTM
-[FALLBACK 2] Visual lost & no geolocation history. Coasting along last known heading.
-```
+  ```text
+  [FALLBACK 1] Visual lost. Driving to last known geolocated UTM
+  [FALLBACK 2] Visual lost & no geolocation history. Coasting along last known heading.
+  ```
+- *The pose it uses is the pose now.* The geolocation takes the ZED's stereo point cloud and
+  `SmartRetrieveRoverPose()` at processing time
+  ([`TagDetector.cpp`](https://github.com/MissouriMRDT/Autonomy_Software/blob/main/src/vision/aruco/TagDetector.cpp)).
+  Stereo depth and a short frame latency make that tolerable for them.
+- *A detection must live before it counts.* `BBOX_MIN_LIFETIME_THRESHOLD = 0.15` s, and a KCF
+  multi-tracker carries the box across decode dropouts for 1 s, dropping it after 3 s
+  ([`BoundingBoxTracking.cpp`](https://github.com/MissouriMRDT/Autonomy_Software/blob/main/src/util/vision/BoundingBoxTracking.cpp)).
+- *Patience.* The approach waits a 2 s buffer before it calls the tag lost, gives up 15 s after
+  that, finishes at 2.0 m, and then watches the tag for 5 s to verify
+  ([`AutonomyConstants.cpp`](https://github.com/MissouriMRDT/Autonomy_Software/blob/main/src/AutonomyConstants.cpp)).
+- *Search is waypoints.* A spiral of geodetic points (57° angular step, 1.0 m spacing, 2.0 m
+  arrival), followed by pure pursuit. A failed spiral is retried reversed, then as a zigzag and a
+  snake ([`SearchPattern.hpp`](https://github.com/MissouriMRDT/Autonomy_Software/blob/main/src/algorithms/SearchPattern.hpp)).
+- They test in their own simulator, built in Unreal Engine 5
+  ([RoveSoSimulator](https://github.com/MissouriMRDT/RoveSoSimulator)).
 
-Source: [`ApproachingMarkerState.cpp`](https://github.com/MissouriMRDT/Autonomy_Software/blob/main/src/states/ApproachingMarkerState.cpp)
-in [Autonomy_Software](https://github.com/MissouriMRDT/Autonomy_Software).
+**Michigan MRover** ([mrover-ros2](https://github.com/umrover/mrover-ros2)).
+- *Hits before a position.* The tag detector counts hits per id; a hit raises the count and a
+  missed frame lowers it. A tag is published as a TF frame in the map only above
+  `mMinTagHitCountBeforePublish`, with `max_hits: 10`
+  ([`tag_detector.processing.cpp`](https://github.com/umrover/mrover-ros2/blob/main/perception/tag_detector/tag_detector.processing.cpp)).
+  The TF is stamped `now()`, so the pose is the latest one, as at MRDT.
+- *The map position outlives the pixels.* The approach reads the tag's map position and
+  forgets it only after `target_expiration_duration: 60.0` s
+  ([`approach_target.py`](https://github.com/umrover/mrover-ros2/blob/main/navigation/approach_target.py),
+  [`config/navigation.yaml`](https://github.com/umrover/mrover-ros2/blob/main/config/navigation.yaml)).
+- *Far away, bearing only, and never an old one.* A tag seen only by the long-range camera is
+  projected `long_range.distance_ahead: 3.0` m along its bearing. Once its hit count has decayed,
+  the bearing is replaced by straight ahead rather than steered on stale
+  ([`long_range.py`](https://github.com/umrover/mrover-ros2/blob/main/navigation/long_range.py)).
+  This is B-32's failure, avoided by rule.
+- *Search is waypoints too.* `spiral_traj` builds segments around the GPS point
+  (`distance_between_spirals: 3.0`, `coverage_radius: 20.0`); they stop `tag_stop_threshold: 1.75` m
+  from the tag. Waypoints let the board close each leg while the camera looks.
 
-**Michigan MRover** does not stream a spiral. `spiral_traj` builds waypoint segments around the
-GPS point (`distance_between_spirals: 3.0`, `coverage_radius: 20.0` in
-[`config/navigation.yaml`](https://github.com/umrover/mrover-ros2/blob/main/config/navigation.yaml);
-the generator is
-[`navigation/trajectory.py`](https://github.com/umrover/mrover-ros2/blob/main/navigation/trajectory.py)).
-They stop `tag_stop_threshold: 1.75` m from the tag. Waypoints let the board close each leg
-while the camera is free to look, which a continuous velocity spiral does not.
+**BYU** won the 2025 URC autonomous navigation task (first of 114 teams, fourth overall,
+[BYU Magazine](https://magazine.byu.edu/article/byu-mars-rover-team/)). Their autonomy code is
+not public: the newest repository in [BYUMarsRover](https://github.com/BYUMarsRover) is a ZED
+wrapper for a custom detector. Their 2025 telemetry paper
+([UA repository](https://repository.arizona.edu/handle/10150/679589)) refused automated reads
+(HTTP 403) and is unread.
 
-**What this says for B-32.** On each detection, estimate the tag's position in the local frame
-from the rover pose *at the image time*, the bearing and the range, and keep the estimate.
-Approach by `goto_local` to a standoff short of that point, and only fall back to coasting when
-there is no estimate. Require several hits before leaving the search. Then add a
-`pytest -m gazebo` of the whole leg, headless: the GUI drops Gazebo to about 0.4× real time.
+**Waterloo, an older public branch.** Current
+[Sparky-CIRC-2026](https://github.com/uwrobotics/Sparky-CIRC-2026) has no marker code.
+[uwrt_mars_rover](https://github.com/uwrobotics/uwrt_mars_rover) branch
+`azumnanji/basic_drive_to_ar` does, and it is ROS 1.
+[`drive_to_ar_server.cpp`](https://github.com/uwrobotics/uwrt_mars_rover/blob/azumnanji/basic_drive_to_ar/uwrt_mars_rover_autonomy/uwrt_mars_rover_drive_to_ar/src/drive_to_ar_server.cpp)
+takes the tag pose (or the midpoint of two) and streams `cmd_vel` until the odometry is inside
+`DISTANCE_TOLERANCE` 0.5 m. Linear speed is `3.0 * distance` and yaw rate is `1.5 * heading error`
+(those two defaults).
+[`spiralSearch_server.cpp`](https://github.com/uwrobotics/uwrt_mars_rover/blob/azumnanji/basic_drive_to_ar/uwrt_mars_rover_autonomy/uwrt_mars_rover_spiral/src/spiralSearch_server.cpp)
+opens an arc whose radius is `linear / angular` until the goal radius. Not copied.
+
+**Not public, or not found.** Waterloo's URC 2025 technical report is on a Confluence that was not
+read. Alberta's team (SPEAR) has no repository we could find. AGH Space Systems, the ERC 2022
+winner, publishes no rover code ([AGH-Space-Systems](https://github.com/AGH-Space-Systems)).
+PCz, Kalman and the other Polish teams: no public organisation found. Those gaps stay open.
+
+**What Rupsha took, and where it goes further.** It took the geolocated fallback, the hit gate
+and the long hold, as ideas, in our own code
+([`rupsha.py`](../../../src/rupsha_control/rupsha_control/rupsha.py)):
+- an estimate in the local frame, the 1/range²-weighted mean of the last 10 fixes, held 30 s;
+- 3 distinct frames before the search hands over, closing to 4 m of the estimate to collect them;
+- the approach steers on pixels inside the 4.5 m reliable range, and otherwise hands the board
+  a point `standoff − WP_RADIUS` short of the estimate, so the board's own stop is the standoff.
+  It finishes when the camera is within `standoff + 0.25` m and the tag was seen this pass;
+- a search that already holds 3 fixes drives back to them instead of spiraling;
+- the coast survives only for the case with no local position.
+
+Where it differs: each fix uses the rover pose **at the image's capture time**, interpolated
+from a 3 s history, not the pose now. Both teams have stereo depth and less latency. Rupsha has
+one monocular camera on a Pi 4 and steers on detections up to 0.5 s old while pivoting at up to
+30°/s. On the fake board, the pose now puts a 7 m fix 1.2 m off. The headless marker leg now
+finishes: camera 1.69 m from the tag face.
 
 **Revisit when:** a camera with more pixels, or a bigger tag, moves the reliable range past the
 GPS uncertainty of the leg. Until then the estimate is what closes the gap.

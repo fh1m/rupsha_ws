@@ -27,32 +27,20 @@ The venv is `/opt/rupsha-venv` (pymavlink, ruff). `python3` from apt does not ha
 | Pixhawk 2.4.8 on USB, ArduRover 4.7.2, baseline audit | on the desk, 0 parameters differ. Pre-arm fails on **compass not calibrated** and **hardware safety switch** only |
 | Compass calibration | needs a person: `ros2 run rupsha_control compass_cal --reboot`, then rotate the board. Do not start it and walk away; it holds the compass in calibration until it finishes or you cancel |
 | The Pi 4 | **down.** Do not SSH it, do not run `tools/pil.sh`, do not treat Pi-in-the-loop as runnable |
-| Whole stack in Gazebo | runs: GNSS leg, search spiral, the vision node sees tag 3. The approach then loses the tag. This is [B-32](BUGS.md) and it is the next task |
+| Whole stack in Gazebo | a marker leg finishes: GNSS leg, search, approach, verify. Headless `test_gazebo_marker_leg.py` passed once — camera 1.69 m from the tag face, body 2.09 m from the post, `all 1 legs complete` in 30 s ([B-32](BUGS.md), [B-33](BUGS.md)) |
+| The public page | [fh1m.github.io/rupsha_ws](https://fh1m.github.io/rupsha_ws/), built from `docs/` in Mongla's red and black, with the same faces |
 | CI | green: lint, build, pytest on apt OpenCV 4.6, and the SITL scenarios |
 | Anything outdoors | impossible. There is no chassis |
 
 ## 3. The next task, in order
 
-1. **Fix B-32.** The rover is sent to a point ~6 m short of post 3 in `flat_ci`
-   (`posts[tag_id 3]` at east −15.91, north 0.27; home in `src/rupsha_sim/scenarios/flat_ci.yaml`).
-   `goto_gnss` arrives, `search_spiral` reports the tag at about 7 m and ±30° bearing, and
-   `vision_approach` returns `LOST: target unseen 2 s`. Four approaches, two runs, all lost.
-   The closest the rover got was 2.2 m from the post, once.
-   The detection limit is measured: reliable to 4.5 m, edge at 6 m, never at 8 m, on a 640×480
-   camera with a 70° lens and a 20 cm tag
-   ([measured-bars §3](measured-bars.md#3-gazebo-harmonic--sitl-lockstep-rupsha_skid-flat_ci)).
-   A detection at 7 m is one lucky frame. The approach then pivots toward a bearing up to 0.5 s
-   old (`DETECTION_FRESH_S`) and the tag leaves the frame.
-   What to build, taken from the teams who do this
-   ([sota §9](sota/README.md#9-how-the-teams-that-win-urc-approach-a-marker)):
-   estimate the tag's position in the local frame from the rover pose **at the image time**,
-   the bearing and the range; approach with `goto_local` to a point short of it; coast on the
-   last heading only when there is no estimate (that coast already exists, B-30). Require
-   several hits before leaving the search. Then pin it with a `pytest -m gazebo` test of the
-   whole leg, **headless**.
-2. **Finish the survey** those two codebases started. BYU Mars Rover, Waterloo, Alberta and the
-   Polish teams were not read. Add what you verify, with URLs, to sota §9. Do not copy their code.
-3. **Compass calibration** only when a person is holding the board.
+1. **Compass calibration** only when a person is holding the board. Pre-arm is still the compass
+   and the safety switch. Do not start `compass_cal` and walk away.
+2. **A full course in Gazebo.** `urc_autonomy` is the seeded course the executive has not run
+   end to end. Score it on Gazebo truth, headless, the same way as the marker leg.
+3. The marker survey in [sota §9](sota/README.md#9-how-the-teams-that-win-urc-approach-a-marker)
+   has MRDT, MRover, and Waterloo's older `drive_to_ar` branch. BYU, Alberta and the Polish
+   teams have no public autonomy code that could be read. Do not copy anyone's code.
 
 ## 4. How to run the stack
 
@@ -127,7 +115,8 @@ sudo -u fh1m git -C /home/fh1m/tmp/rupsha_ws push
 
 | # | What |
 |---|---|
-| B-32 | open. The approach loses the tag. Section 3 |
+| B-32 | fixed. The marker leg finishes at the post. Section 2 |
+| B-33 | fixed. The vision node in sim uses sim time, so a detection's age is real |
 | B-31 | the link is alive on any board message, not the 1 Hz heartbeat, so a slow sim is not "link lost" |
 | B-30 | `vision_approach` coasts up to half the last-seen gap instead of stopping at the first dropout |
 | B-29 | `sim.launch.py` actually starts: SITL's log dir is created, the manager retries, the executive waits |

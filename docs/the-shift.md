@@ -1,3 +1,9 @@
+---
+layout: default
+title: The Shift
+description: "Reflexes on a Pixhawk running ArduRover, thinking on a Raspberry Pi 4, and why that line is the whole design."
+---
+
 # The Shift — from a submarine to a rover, and where the thinking lives
 
 *Written for a reader with no robotics background. Engineers can skip to §4.*
@@ -35,6 +41,12 @@ Rewriting any of that on the Pi would move a loop that must never stall onto a L
 sometimes does. So Rupsha does not. The Pi sends **intent** — "go to this latitude/longitude",
 "drive at 0.5 m/s turning 10°/s for the next 100 ms" — and the board decides how to make the
 motors do it.
+
+<p align="center"><img src="assets/diagrams/split.svg" alt="The Pi thinks. The Pixhawk runs the loops, the mixer and the failsafes." width="100%"></p>
+
+When the Pi's heartbeat stops, the board does not wait for a person:
+
+<p align="center"><img src="assets/diagrams/failsafe.svg" alt="GCS lost at 2 seconds, the board acts at 3.5, HOLD seen at 3.6." width="100%"></p>
 
 ## 3. What the Pi adds
 

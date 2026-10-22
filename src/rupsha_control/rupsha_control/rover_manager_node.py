@@ -72,6 +72,7 @@ class RoverManager(Node):
         self._dets: list = []
         self._dets_lock = threading.Lock()
         self.rupsha = Rupsha(self.fc, vision=self._detections, log=log)
+        self.rupsha.camera_forward_m = float(p('camera_forward_m', 0.0).value)
 
         self.heartbeat = Heartbeat(self.fc.send_heartbeat, 1.0 / Companion.HEARTBEAT_HZ, log)
         self.heartbeat.start()

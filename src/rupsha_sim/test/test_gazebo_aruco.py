@@ -30,10 +30,6 @@ TAG_ID = 3
 # a 20 cm tag decodes reliably from ~20 px; 6 m (16 px) is the edge, 8 m (11 px) never (measured-bars §3)
 STATIONS_M = (4.5, 3.0)
 FRAMES = 10
-# camera position on the model (model_gen) and the model's spawn height (worldgen)
-CAM_FORWARD_M, CAM_HEIGHT_M = 0.33, 0.02 + 0.20 + 0.22
-CUBE_HALF_M = worldgen.MARKER_M * (worldgen.MARKER_PX + 2 * worldgen.QUIET_PX) / worldgen.MARKER_PX / 2
-TAG_CENTRE_Z_M = worldgen.POST_TOP_M + CUBE_HALF_M
 
 
 def scenario():
@@ -55,17 +51,6 @@ def frames(n, timeout=10.0):
     while len(got) < n and time.monotonic() < deadline:
         time.sleep(0.02)
     return [np.frombuffer(m.data, np.uint8).reshape(m.height, m.width, 3) for m in got[:n]]
-
-
-def true_range(rover_e, rover_n, heading_deg, post_e, post_n):
-    yaw = math.radians(90.0 - heading_deg)
-    cam = np.array([rover_e + CAM_FORWARD_M * math.cos(yaw),
-                    rover_n + CAM_FORWARD_M * math.sin(yaw), CAM_HEIGHT_M])
-    normals = [np.array(v) for v in ((1, 0), (-1, 0), (0, 1), (0, -1))]
-    towards = cam[:2] - np.array([post_e, post_n])
-    face = max(normals, key=lambda nrm: float(nrm @ towards))
-    centre = np.array([post_e + CUBE_HALF_M * face[0], post_n + CUBE_HALF_M * face[1], TAG_CENTRE_Z_M])
-    return float(np.linalg.norm(centre - cam))
 
 
 def test_aruco_range_matches_gazebo_geometry(gz_rover):
@@ -93,7 +78,7 @@ def test_aruco_range_matches_gazebo_geometry(gz_rover):
         assert r.run('turn_to', heading=facing, timeout=20).success
         time.sleep(1.0)
         e, n, h = gazebo.truth()
-        truth_m = true_range(e, n, h, pe, pn)
+        truth_m = gazebo.true_range(e, n, h, pe, pn)
         ranges = []
         sides = []
         for img in frames(FRAMES):

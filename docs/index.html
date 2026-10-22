@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rupsha — an autonomy stack for a ground rover</title>
+<meta name="description" content="A ROS 2 stack for a Pixhawk running ArduRover and a Raspberry Pi that does the thinking. Every number says which run measured it. Nothing here has been outdoors.">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://fh1m.github.io/rupsha_ws/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Rupsha — an autonomy stack for a ground rover">
+<meta property="og:description" content="Pixhawk reflexes, a Pi that thinks, and a public record of every measurement. Nothing here has been outdoors yet, and the page says so.">
+<meta property="og:url" content="https://fh1m.github.io/rupsha_ws/">
+<meta property="og:image" content="https://fh1m.github.io/rupsha_ws/assets/diagrams/approach.svg">
+<link rel="icon" href="assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<header class="topbar"><div class="bar">
+  <a class="home" href="./">Rupsha</a>
+  <nav>
+    <a href="the-shift.html">The shift</a>
+    <a href="capability-map.html">Capabilities</a>
+    <a href="https://github.com/fh1m/rupsha_ws">Source</a>
+  </nav>
+</div></header>
+
+<main>
+<section class="hero">
+  <div class="wrap">
+    <p class="kicker">An autonomy stack <i>//</i> for a ground rover</p>
+    <h1 class="title">Rupsha<span class="title__bn" lang="bn">রূপসা</span></h1>
+    <p class="origin">Named for the <b>Rupsha</b>, the river that passes Khulna and continues south as the Pasur — the river the Port of Mongla stands on. <a href="https://github.com/fh1m/mongla_ws">Mongla</a> is the AUV. This is the same water, on dry land.</p>
+    <p class="lede">The ground slips, a tag is the size of a hand, and the board will hold the rover if the Pi dies. The software has to know which of those just happened, and say so.</p>
+
+    <div class="measures" aria-label="Measured, and where">
+      <article class="wide">
+        <div>
+          <span class="label">Speed, Gazebo lockstep</span>
+          <b>1.00<u>m/s</u></b>
+          <div class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <span class="note">Heading held, <code>turn_to</code> without overshoot. Scored on Gazebo's pose, not the estimate the rover steered by. <code>test_gazebo_lockstep.py</code>.</span>
+      </article>
+      <article>
+        <span class="label">Companion lost → HOLD</span>
+        <b>3.6<u>s</u></b>
+        <span class="note">The board acts at 3.5 s. SITL showed HOLD on the next heartbeat. <code>test_sitl_scenarios.py</code>.</span>
+      </article>
+      <article>
+        <span class="label">ArUco at 4.5 m</span>
+        <b>+3.6<u>%</u></b>
+        <span class="note">19 px, seen in every frame, 2026-10-23. Still long, still unexplained.</span>
+      </article>
+      <article>
+        <span class="label">Marker leg, camera to tag</span>
+        <b>1.69<u>m</u></b>
+        <span class="note">One headless run, 30 s, <code>all 1 legs complete</code>. The bar was 2.5 m.</span>
+      </article>
+      <article class="warn">
+        <span class="label">Outdoors</span>
+        <b>0</b>
+        <span class="note">There is no chassis. Every number on this page says which bench, SITL or Gazebo run it came from.</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<nav class="toc" aria-label="Chapters">
+  <div class="wrap">
+    <a href="#ground">The ground</a>
+    <a href="#split">The split</a>
+    <a href="#leg">A marker leg</a>
+    <a href="#record">The record</a>
+    <a href="#read">Read next</a>
+  </div>
+</nav>
+
+<section id="ground">
+  <div class="wrap">
+    <div class="chapter"><div class="no">I</div><div><h2>The ground</h2><p class="sub">What the vehicle has to survive, and what we measured instead of assuming</p></div></div>
+    <hr class="hair">
+    <div class="block">
+      <p class="lede quiet">Each row is a reason an ordinary trick fails on a rover, and the number we have in place of the trick.</p>
+      <table class="ledger">
+        <thead><tr><th>The ground does this</th><th>So this breaks</th><th>What we measured</th></tr></thead>
+        <tbody>
+          <tr><td>A 20 cm tag is a few pixels at the distance a search starts</td><td>A detector that claims 8 m</td><td class="num">never at 8 m (11 px); flickers at 6 m (16 px); every frame from 4.5 m</td></tr>
+          <tr><td>The tag sits on a post, the camera sits on the chassis</td><td>A lens aimed at the horizon</td><td class="num">8° down put the tag out of the top of the frame at 1.7 m; 17° up keeps it</td></tr>
+          <tr><td>The board stops short of the point you hand it</td><td>A target placed at the standoff</td><td class="num">WP_RADIUS 1.0 m, so the point is 0.5 m from the tag and the stop is the 1.5 m standoff</td></tr>
+          <tr><td>The wheels can spin while the rover does not move</td><td>A plan that only watches the command</td><td class="num">stuck ladder: reverse, +65°, −65°, then say STUCK</td></tr>
+          <tr><td>The Pi can stall on a frame</td><td>A velocity left latched</td><td class="num">the stream dies 3 s after the last command; silence is HOLD at 3.6 s</td></tr>
+          <tr><td>A pose taken now is not the pose in the picture</td><td>A fix while the rover is pivoting</td><td class="num">pose-now puts a 7 m fix more than a metre off; the fix uses the pose at capture</td></tr>
+        </tbody>
+      </table>
+      <figure>
+        <img src="assets/diagrams/range.svg" alt="How far a 20 cm tag is seen. Never at 8 metres, flickering at 6, every frame at 4.5 and 3, about 3 percent long. The marker leg finished at 1.69 metres.">
+        <figcaption>640×480, a 70° lens, the rover driving itself at post 3 of <code>flat_ci</code>. Truth is the camera to the tag face. The 3 % long reading was there before the pitch change and it is still there after. It is recorded, not explained. <a href="https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/measured-bars.md">measured-bars §3</a>.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section id="split">
+  <div class="wrap">
+    <div class="chapter"><div class="no">II</div><div><h2>The split</h2><p class="sub">Reflexes on the Pixhawk. Thinking on the Pi. One cable.</p></div></div>
+    <hr class="hair">
+    <div class="block">
+      <p>ArduRover already closes the turn-rate and speed loops, mixes skid steering, runs EKF3 and owns every failsafe. Rewriting that on Linux would move a loop that must not stall onto a machine that sometimes does. The Pi sends intent. One node is allowed to speak MAVLink, as sysid 245. A mission is a client of <code>/rupsha/move</code> and cannot, by construction, write a motor command.</p>
+      <figure>
+        <img src="assets/diagrams/split.svg" alt="The Raspberry Pi thinks and speaks MAVLink as sysid 245. The Pixhawk runs ArduRover.">
+        <figcaption>Bench tools speak as sysid 246. A tool that heartbeats as 245 and then exits latches the failsafe: flashing yellow, HOLD, until reboot. The essay is <a href="the-shift.html">The Shift</a>.</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/diagrams/failsafe.svg" alt="From the last heartbeat: GCS lost at 2 seconds, the board acts at 3.5, HOLD seen in SITL at 3.6.">
+        <figcaption><code>FS_GCS_TIMEOUT</code> 2 s plus <code>FS_TIMEOUT</code> 1.5 s. The test bound is 4.5 s, one heartbeat after the board acts. Seen at 3.6 s.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section id="leg">
+  <div class="wrap">
+    <div class="chapter"><div class="no">III</div><div><h2>A marker leg</h2><p class="sub">The longest loop the stack has closed</p></div></div>
+    <hr class="hair">
+    <div class="block">
+      <p>Headless Gazebo, the whole stack: manager, vision, localization, executive, against ArduRover SITL. The leg is a GNSS point 6 m short of post 3, then a search, then an approach, then a verify that refuses to succeed because the rover merely stopped.</p>
+      <pre class="states">NAVIGATING
+    → SEARCH_PATTERN          three frames, or drive back to a held estimate
+    → APPROACHING_MARKER      pixels inside 4.5 m, else a point short of the tag
+    → VERIFYING_MARKER        the tag still in view, range ≤ 2.5 m, most of 1.5 s
+    → done
+
+a loss under the retry cap goes back a state
+stuck reverses, then tries the search again</pre>
+      <figure id="approach-fig">
+        <img src="assets/diagrams/approach.svg" alt="Side view at the end of the leg. The camera is 1.69 m from the tag and looks 17 degrees up. An 8 degree downward look passed under the tag.">
+        <figcaption>One run, 30 s. Camera 1.69 m from the tag face (limit 2.5 m). The body stayed 2.09 m from the post centre (limit 0.8 m). The dashed ray is the pitch that failed verify: the window was looking at the pole. <code>test_gazebo_marker_leg.py</code>.</figcaption>
+      </figure>
+      <p class="quiet">Each fix uses the rover pose at the image's capture time, interpolated across 3 s, plus the camera's 0.33 m offset on the Gazebo model. Ten fixes, weighted by one over range squared, held 30 s. A retry that already has three of them drives back. It does not spiral the estimate away.</p>
+    </div>
+  </div>
+</section>
+
+<section id="record">
+  <div class="wrap">
+    <div class="chapter"><div class="no">IV</div><div><h2>The record</h2><p class="sub">Four states, and they are not blended</p></div></div>
+    <hr class="hair">
+    <div class="block">
+      <p><b>FIELD</b> is outdoors, on the rover. There is no row in that state. <b>BENCH</b> is the real board on a desk, or the real code closing a loop against SITL or Gazebo. <b>BUILT</b> is code and tests that have not closed a loop. <b>BLOCKED</b> says what it is waiting on.</p>
+      <table class="ledger">
+        <thead><tr><th>Waiting</th><th>On</th></tr></thead>
+        <tbody>
+          <tr><td>Arming the real board</td><td>a person, for the compass, and the safety switch</td></tr>
+          <tr><td>Pi-in-the-loop</td><td>the Pi 4 is powered off. The last run closed a square to 0.73 m by truth, at 11.5 % of the Pi</td></tr>
+          <tr><td>Sim-on-Hardware</td><td>the simulated IMUs never report healthy. Recorded. Not to be re-flashed on a whim</td></tr>
+          <tr><td>Anything outdoors</td><td>a chassis, motors, drivers, a battery</td></tr>
+        </tbody>
+      </table>
+      <p>The full table, each row with the test that pins it, is the <a href="capability-map.html">capability map</a>. When a field run disagrees with a row, the field run wins and <a href="https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/measured-bars.md">the ledger</a> keeps both.</p>
+    </div>
+  </div>
+</section>
+
+<section id="read">
+  <div class="wrap">
+    <div class="chapter"><div class="no">V</div><div><h2>Read next</h2><p class="sub">The page is the tour. The rooms are the repository.</p></div></div>
+    <hr class="hair">
+    <div class="block">
+      <table class="ledger">
+        <tbody>
+          <tr><td><a href="the-shift.html">The Shift</a></td><td>why the Pi does not drive the motors</td></tr>
+          <tr><td><a href="capability-map.html">Capability map</a></td><td>every claim, and the test beside it</td></tr>
+          <tr><td><a href="https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/HANDOFF.md">Handoff</a></td><td>where the work is, for the next person</td></tr>
+          <tr><td><a href="https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/sota/README.md">What was read</a></td><td>MRDT, Michigan, Waterloo's older branch. Nothing copied</td></tr>
+          <tr><td><a href="https://github.com/fh1m/rupsha_ws">The source</a></td><td>Muhammad Fahim Faisal. MIT.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="colophon">
+  <span>Muhammad Fahim Faisal</span>
+  <span>MIT</span>
+  <span>0 outdoor runs</span>
+</footer>
+<script>
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  function mark() {
+    var y = window.scrollY + 120;
+    var current = sections[0];
+    sections.forEach(function (s) { if (s && s.offsetTop <= y) current = s; });
+    links.forEach(function (a, i) {
+      if (sections[i] === current) a.setAttribute('aria-current', 'true');
+      else a.removeAttribute('aria-current');
+    });
+  }
+  document.addEventListener('scroll', mark, { passive: true });
+  mark();
+})();
+</script>
+</body>
+</html>

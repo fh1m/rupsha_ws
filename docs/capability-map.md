@@ -1,10 +1,16 @@
+---
+layout: default
+title: Capability map
+description: "Every capability of the Rupsha stack, the evidence for it, and whether it is field, bench, built, or blocked."
+---
+
 # Capability map
 
 Every capability, the evidence for it, and one of four states: **FIELD** (the real rover,
 outdoors) · **BENCH** (real hardware on a desk, or the real code closing a loop against
 SITL/Gazebo — the column says which) · **BUILT** (code and tests, never closed a loop) ·
 **BLOCKED** (and what unblocks it). Nothing is FIELD. Numbers come from
-[`measured-bars.md`](../.claude/context/measured-bars.md).
+[`measured-bars.md`](https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/measured-bars.md).
 
 ## 1. The board
 
@@ -54,16 +60,20 @@ SITL/Gazebo — the column says which) · **BUILT** (code and tests, never close
 
 ## 5. Simulation and the hardware chain
 
+<p align="center"><img src="assets/diagrams/range.svg" alt="Detection range of a 20 cm tag: never at 8 m, edge at 6 m, reliable and about 3 percent long at 4.5 m and 3 m." width="100%"></p>
+
+<p align="center"><img src="assets/diagrams/approach.svg" alt="The marker leg finished with the camera 1.69 m from the tag, looking 17 degrees up." width="100%"></p>
+
 | Capability | State | Evidence |
 |---|---|---|
 | ArduRover SITL with the baseline | BENCH | `test_sitl_scenarios.py` |
 | Gazebo Harmonic + SITL JSON lockstep, 6WD model | BENCH | `test_gazebo_lockstep.py` (3 tests, truth = Gazebo pose) |
-| Whole stack in Gazebo (`sim.launch.py`: manager, vision, localization, executive) on a marker leg: GNSS leg, search spiral, tag 3 found by the vision node | BENCH (Gazebo) | three runs, scored on `/sim/ground_truth/odometry`; the rover reached 2.2 m of the post once, but the approach still ends LOST ([B-32](../.claude/context/BUGS.md)) |
-| ArUco range against Gazebo truth, rover driving itself to stations | BENCH | `test_gazebo_aruco.py`: ~3 % long; reliable to 4.5 m, edge at 6 m for 20 cm tags ([measured-bars](../.claude/context/measured-bars.md)) |
+| Whole stack in Gazebo (`sim.launch.py`: manager, vision, localization, executive) on a marker leg: GNSS, search, approach, verify | BENCH (Gazebo) | `test_gazebo_marker_leg.py`, one headless run: `all 1 legs complete` in 30 s, camera 1.69 m from the tag face, body 2.09 m from the post ([B-32](https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/BUGS.md)) |
+| ArUco range against Gazebo truth, rover driving itself to stations | BENCH | `test_gazebo_aruco.py`: ~3 % long; reliable to 4.5 m, edge at 6 m for 20 cm tags ([measured-bars](https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/measured-bars.md)) |
 | Seeded worlds (`flat_ci`, `playpen`) with ArUco posts | BUILT | `test_sim_contract.py` (fresh, deterministic, tags decode) |
 | Board-in-the-loop | BENCH | `pytest -m board` |
 | Pi-in-the-loop | BENCH | `tools/pil.sh` |
-| Sim-on-Hardware (SITL physics on the Pixhawk) | **BLOCKED** | fits (757 KB flash free), boots, simulated GPS + EKF3 run; simulated IMUs never healthy, will not arm — [record](../.claude/context/platform/records/sim_on_hw_2026-10-21.json) |
+| Sim-on-Hardware (SITL physics on the Pixhawk) | **BLOCKED** | fits (757 KB flash free), boots, simulated GPS + EKF3 run; simulated IMUs never healthy, will not arm — [record](https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/platform/records/sim_on_hw_2026-10-21.json) |
 
 ## 6. Blocked, and what unblocks it
 

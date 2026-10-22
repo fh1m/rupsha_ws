@@ -20,7 +20,7 @@ from launch_ros.actions import Node
 
 
 def _setup(context):
-    from rupsha_sim import contract
+    from rupsha_sim import contract, model_gen
     from rupsha_sim.sitl import Sitl
 
     share = get_package_share_directory('rupsha_sim')
@@ -45,9 +45,13 @@ def _setup(context):
         ExecuteProcess(cmd=sitl.command(), cwd=str(sitl.dir), output='log'),
         TimerAction(period=8.0, actions=[
             Node(package='rupsha_control', executable='manager', name='rupsha_manager',
-                 parameters=[{'url': contract.SITL_URL}], output='screen',
+                 parameters=[{'url': contract.SITL_URL,
+                              'camera_forward_m': float(model_gen.CAMERA_XYZ[0])}], output='screen',
                  condition=IfCondition(LaunchConfiguration('manager'))),
+            # Sim time: the bridge stamps images in Gazebo's clock, so on wall time every
+            # frame's latency is NaN and every detection's age unknown (B-33).
             Node(package='rupsha_vision', executable='vision', name='vision', output='screen',
+                 parameters=[{'use_sim_time': True}],
                  condition=IfCondition(LaunchConfiguration('vision'))),
             Node(package='rupsha_localization', executable='localization', name='localization',
                  parameters=[os.path.join(get_package_share_directory('rupsha_localization'),

@@ -224,8 +224,11 @@ def test_vision_approach_lost_target():
 
 
 def test_vision_approach_closes_in_on_a_tag_seen_once_past_its_detection_range():
-    """Gazebo: one frame at ~7 m, then nothing until ~6 m. Stopping there never re-acquires."""
+    """Gazebo: one frame at ~7 m, then nothing until ~6 m. Stopping there never re-acquires.
+
+    No local position, so no estimate: this is the coast fallback (B-30) on purpose."""
     fc, r = armed()
+    fc.local_position = False
     post_n, decode_m = 8.0, 6.0
     first = {'t': None}
 
@@ -244,6 +247,7 @@ def test_vision_approach_closes_in_on_a_tag_seen_once_past_its_detection_range()
 
 def test_coasting_on_a_lost_tag_never_crosses_the_standoff():
     fc, r = armed()
+    fc.local_position = False
     post_n, standoff = 3.0, 2.0
     seen = {'n': 0}
 
@@ -255,6 +259,122 @@ def test_coasting_on_a_lost_tag_never_crosses_the_standoff():
     fc.sleep(5.0)
     assert post_n - fc.north > standoff
 
+
+
+def test_vision_approach_drives_to_the_estimated_tag_when_it_drops_out():
+    """B-32: one frame at 7 m and +30 deg, 0.4 s old, taken while the rover pivoted.
+
+    The fix must use the pose at the IMAGE time: with the pose at hand-over (yaw 8 deg
+    further round) it lands ~1 m off, the board drives the wrong way and the tag never
+    comes back. Truth is the fake rover's own position against the post.
+    """
+    fc, r = armed()
+    assert r.run('pivot', duration=1.0, yaw_rate=20.0).success
+    t_img = 0.6
+    yaw_img = 20.0 * t_img
+    post = (7.0 * math.cos(math.radians(yaw_img + 30.0)), 7.0 * math.sin(math.radians(yaw_img + 30.0)))
+    standoff, decode_m, fov = 2.0, 6.0, 35.0
+    seen = {'first_fix': None}
+
+    def vision():
+        dn, de = post[0] - fc.north, post[1] - fc.east
+        rng = math.hypot(dn, de)
+        bearing = geo.heading_error(math.degrees(math.atan2(de, dn)), fc.yaw)
+        if rng <= decode_m and abs(bearing) <= fov:
+            if seen['first_fix'] is None:
+                seen['first_fix'] = r.tag_estimate('', 3)
+            return [Det('tag', 3, bearing, rng, fc.clock.t)]
+        return [Det('tag', 3, 30.0, 7.0, t_img)]
+    r.vision = vision
+    closest = [math.inf]
+    real = fc.sleep
+
+    def sleep(dt):
+        real(dt)
+        closest[0] = min(closest[0], math.hypot(post[0] - fc.north, post[1] - fc.east))
+    r.sleep = sleep
+    res = r.run('vision_approach', tag_id=3, standoff=standoff)
+    assert res.success, res.message
+    est = seen['first_fix']
+    assert est is not None, 'the 7 m frame left no estimate'
+    assert math.hypot(est[0] - post[0], est[1] - post[1]) < 0.5, (est, post)
+    assert math.hypot(post[0] - fc.north, post[1] - fc.east) == pytest.approx(standoff, abs=0.3)
+    assert closest[0] >= standoff - 0.3
+
+
+def test_a_close_centered_sighting_survives_the_tag_dropping_out():
+    """The Gazebo run: centered at 1.71 m against a 1.5 m standoff, then nothing for 2 s."""
+    fc, r = armed()
+    post_n, standoff = 1.71, 1.5
+    frames = {'n': 0}
+
+    def vision():
+        frames['n'] += 1
+        if frames['n'] <= 4:
+            return [Det('tag', 3, 0.1, post_n - fc.north, fc.clock.t)]
+        return []
+    r.vision = vision
+    res = r.run('vision_approach', tag_id=3, standoff=standoff)
+    assert res.success, res.message
+    assert post_n - fc.north <= standoff + 0.3
+
+
+def test_a_retry_drives_back_to_the_estimate_instead_of_spiraling():
+    fc, r = armed()
+    post = (8.0, 0.0)
+    now = fc.clock.t
+    r._poses.append((now, fc.north, fc.east, fc.yaw))
+    for _ in range(3):
+        r._observe(('', 3), Det('tag', 3, 0.0, post[0], now))
+    assert r.tag_estimate('', 3) is not None
+
+    def vision():
+        d = math.hypot(post[0] - fc.north, post[1] - fc.east)
+        bearing = geo.heading_error(math.degrees(math.atan2(post[1] - fc.east, post[0] - fc.north)), fc.yaw)
+        return [Det('tag', 3, bearing, d, fc.clock.t)] if d < 4.5 else []
+    r.vision = vision
+    res = r.run('search_spiral', tag_id=3, radius=20.0, timeout=60.0)
+    assert res.success, res.message
+    assert 'target_local' in {k for k, _ in fc.sent}
+    assert fc.north > 3.0
+
+
+def test_search_needs_three_frames_before_it_hands_over():
+    """One frame at the decode edge is not a find; three distinct frames are."""
+    fc, r = armed()
+    post = (6.0, 0.0)
+    once = {'t': None}
+
+    def one_frame():
+        if once['t'] is None:
+            once['t'] = fc.clock.t
+        return [Det('tag', 3, 0.0, post[0] - fc.north, once['t'])]
+    r.vision = one_frame
+    res = r.run('search_spiral', tag_id=3, radius=8.0, timeout=40.0)
+    assert res.outcome != Outcome.SUCCEEDED, res.message
+
+    fc, r = armed()
+    frames = set()
+
+    def camera_10hz():
+        d = math.hypot(post[0] - fc.north, post[1] - fc.east)
+        if d > 6.5:
+            return []
+        stamp = math.floor(fc.clock.t * 10.0) / 10.0
+        frames.add(stamp)
+        bearing = geo.heading_error(math.degrees(math.atan2(post[1] - fc.east, post[0] - fc.north)), fc.yaw)
+        return [Det('tag', 3, bearing, d, stamp)]
+    r.vision = camera_10hz
+    res = r.run('search_spiral', tag_id=3, radius=8.0)
+    assert res.success, res.message
+    assert len(frames) >= 3
+
+
+def test_a_detection_with_no_age_is_not_fresh():
+    """NaN stamp = the image time is unknown (B-33): absent, never fresh forever."""
+    fc, r = armed()
+    r.vision = lambda: [Det('tag', 3, 0.0, 1.0, math.nan)]
+    assert r.run('vision_approach', tag_id=3, standoff=2.0).outcome == Outcome.LOST
 
 def test_tag_zero_is_a_real_id():
     fc, r = armed()

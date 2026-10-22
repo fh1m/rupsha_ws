@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ page.title }} — Rupsha</title>
+<meta name="description" content="{{ page.description }}">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="{{ '/assets/mark.svg' | relative_url }}" type="image/svg+xml">
+<link rel="stylesheet" href="{{ '/assets/site.css' | relative_url }}">
+</head>
+<body class="doc">
+<header class="topbar"><div class="bar">
+  <a class="home" href="{{ '/' | relative_url }}">Rupsha</a>
+  <nav>
+    <a href="{{ '/the-shift.html' | relative_url }}">The shift</a>
+    <a href="{{ '/capability-map.html' | relative_url }}">Capabilities</a>
+    <a href="https://github.com/fh1m/rupsha_ws">Source</a>
+  </nav>
+</div></header>
+<main>{{ content }}</main>
+<footer class="colophon">
+  <span>Muhammad Fahim Faisal</span>
+  <span>MIT</span>
+  <span>0 outdoor runs</span>
+</footer>
+<script>
+(function () {
+  document.querySelectorAll('main table').forEach(function (t) {
+    if (t.parentElement && t.parentElement.classList.contains('tw')) return;
+    var w = document.createElement('div');
+    w.className = 'tw';
+    w.tabIndex = 0;
+    w.setAttribute('role', 'region');
+    w.setAttribute('aria-label', 'table, scrolls sideways');
+    t.parentNode.insertBefore(w, t);
+    w.appendChild(t);
+  });
+})();
+</script>
+</body>
+</html>
