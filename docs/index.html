@@ -11,13 +11,13 @@
 <meta property="og:title" content="Rupsha — an autonomy stack for a ground rover">
 <meta property="og:description" content="Pixhawk reflexes, a Pi that thinks, and a public record of every measurement. Nothing here has been outdoors yet, and the page says so.">
 <meta property="og:url" content="https://fh1m.github.io/rupsha_ws/">
-<meta property="og:image" content="https://fh1m.github.io/rupsha_ws/assets/diagrams/approach.svg">
-<link rel="icon" href="assets/mark.svg" type="image/svg+xml">
+<meta property="og:image" content="https://fh1m.github.io/rupsha_ws/imgs/hero.jpg">
+<link rel="icon" href="imgs/mark.jpg" type="image/jpeg">
 <link rel="stylesheet" href="assets/site.css">
 </head>
 <body>
 <header class="topbar"><div class="bar">
-  <a class="home" href="./">Rupsha</a>
+  <a class="home" href="./"><img src="imgs/mark.jpg" alt="" width="36" height="36">Rupsha</a>
   <nav>
     <a href="the-shift.html">The shift</a>
     <a href="capability-map.html">Capabilities</a>
@@ -28,10 +28,18 @@
 <main>
 <section class="hero">
   <div class="wrap">
-    <p class="kicker">An autonomy stack <i>//</i> for a ground rover</p>
-    <h1 class="title">Rupsha<span class="title__bn" lang="bn">রূপসা</span></h1>
-    <p class="origin">Named for the <b>Rupsha</b>, the river that passes Khulna and continues south as the Pasur — the river the Port of Mongla stands on. <a href="https://github.com/fh1m/mongla_ws">Mongla</a> is the AUV. This is the same water, on dry land.</p>
-    <p class="lede">The ground slips, a tag is the size of a hand, and the board will hold the rover if the Pi dies. The software has to know which of those just happened, and say so.</p>
+    <div class="hero__top">
+      <div>
+        <p class="kicker">An autonomy stack <i>//</i> for a ground rover</p>
+        <h1 class="title">Rupsha<span class="title__bn" lang="bn">রূপসা</span></h1>
+        <p class="origin">Named for the <b>Rupsha</b>, the river that passes Khulna and continues south as the Pasur — the river the Port of Mongla stands on. <a href="https://github.com/fh1m/mongla_ws">Mongla</a> is the AUV. This is the same water, on dry land.</p>
+        <p class="lede">The ground slips, a tag is the size of a hand, and the board will hold the rover if the Pi dies. The software has to know which of those just happened, and say so.</p>
+      </div>
+      <figure class="hero__photo">
+        <img src="imgs/hero.jpg" alt="A drawing of a six-wheel rover at night, red light along the body and under the wheels.">
+        <figcaption>A drawing. There is no chassis, and this is not a photograph of one.</figcaption>
+      </figure>
+    </div>
 
     <div class="measures" aria-label="Measured, and where">
       <article class="wide">
@@ -60,7 +68,7 @@
       <article class="warn">
         <span class="label">Outdoors</span>
         <b>0</b>
-        <span class="note">There is no chassis. Every number on this page says which bench, SITL or Gazebo run it came from.</span>
+        <span class="note">There is no chassis. The pictures on this page are drawings. Every number says which bench, SITL or Gazebo run it came from.</span>
       </article>
     </div>
   </div>
@@ -71,6 +79,7 @@
     <a href="#ground">The ground</a>
     <a href="#split">The split</a>
     <a href="#leg">A marker leg</a>
+    <a href="#quiet">The quiet Pi</a>
     <a href="#record">The record</a>
     <a href="#read">Read next</a>
   </div>
@@ -78,105 +87,105 @@
 
 <section id="ground">
   <div class="wrap">
-    <div class="chapter"><div class="no">I</div><div><h2>The ground</h2><p class="sub">What the vehicle has to survive, and what we measured instead of assuming</p></div></div>
+    <div class="chapter"><div class="no">I</div><div><h2>The ground</h2><p class="sub">A drawing of the machine that does not exist yet</p></div></div>
     <hr class="hair">
-    <div class="block">
-      <p class="lede quiet">Each row is a reason an ordinary trick fails on a rover, and the number we have in place of the trick.</p>
-      <table class="ledger">
-        <thead><tr><th>The ground does this</th><th>So this breaks</th><th>What we measured</th></tr></thead>
-        <tbody>
-          <tr><td>A 20 cm tag is a few pixels at the distance a search starts</td><td>A detector that claims 8 m</td><td class="num">never at 8 m (11 px); flickers at 6 m (16 px); every frame from 4.5 m</td></tr>
-          <tr><td>The tag sits on a post, the camera sits on the chassis</td><td>A lens aimed at the horizon</td><td class="num">8° down put the tag out of the top of the frame at 1.7 m; 17° up keeps it</td></tr>
-          <tr><td>The board stops short of the point you hand it</td><td>A target placed at the standoff</td><td class="num">WP_RADIUS 1.0 m, so the point is 0.5 m from the tag and the stop is the 1.5 m standoff</td></tr>
-          <tr><td>The wheels can spin while the rover does not move</td><td>A plan that only watches the command</td><td class="num">stuck ladder: reverse, +65°, −65°, then say STUCK</td></tr>
-          <tr><td>The Pi can stall on a frame</td><td>A velocity left latched</td><td class="num">the stream dies 3 s after the last command; silence is HOLD at 3.6 s</td></tr>
-          <tr><td>A pose taken now is not the pose in the picture</td><td>A fix while the rover is pivoting</td><td class="num">pose-now puts a 7 m fix more than a metre off; the fix uses the pose at capture</td></tr>
-        </tbody>
-      </table>
-      <figure>
-        <img src="assets/diagrams/range.svg" alt="How far a 20 cm tag is seen. Never at 8 metres, flickering at 6, every frame at 4.5 and 3, about 3 percent long. The marker leg finished at 1.69 metres.">
-        <figcaption>640×480, a 70° lens, the rover driving itself at post 3 of <code>flat_ci</code>. Truth is the camera to the tag face. The 3 % long reading was there before the pitch change and it is still there after. It is recorded, not explained. <a href="https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/measured-bars.md">measured-bars §3</a>.</figcaption>
-      </figure>
+    <figure class="shot">
+      <img src="imgs/post.jpg" alt="A drawing of a six-wheel rover facing a marker cube on a pole, a red line from the camera to the cube.">
+      <figcaption>A drawing, not a photograph of a rover we own. The real machine is a Pixhawk 2.4.8 on a bench and a model in Gazebo. The cube is a 20 cm ArUco tag. The leg stops when the camera is 1.69 m from that face.</figcaption>
+    </figure>
+    <div class="pair">
+      <p>The rover does not have a chassis. What has been driven is a skid-steer model in Gazebo, and the flight controller on a desk with nothing on the motor outputs. The drawing is here so the geometry has a body. The numbers beside it were measured on the model.</p>
+      <p>A 20 cm tag at 8 m is 11 pixels and was never seen. At 6 m it is 16 pixels and flickers. At 4.5 m and 3.0 m it is seen in every frame, and the range comes out about 3 percent long. That error is still unexplained.</p>
     </div>
+    <figure>
+      <img src="assets/diagrams/range.svg" alt="Range bars. 8 m never seen at 11 pixels. 6 m flickers at 16 pixels. 4.5 m is 3.6 percent long. 3.0 m is 3.0 percent long. The leg finished at 1.69 m.">
+    </figure>
   </div>
 </section>
 
 <section id="split">
   <div class="wrap">
-    <div class="chapter"><div class="no">II</div><div><h2>The split</h2><p class="sub">Reflexes on the Pixhawk. Thinking on the Pi. One cable.</p></div></div>
+    <div class="chapter"><div class="no">II</div><div><h2>The split</h2><p class="sub">The Pi thinks. The board drives. Either one can die.</p></div></div>
     <hr class="hair">
-    <div class="block">
-      <p>ArduRover already closes the turn-rate and speed loops, mixes skid steering, runs EKF3 and owns every failsafe. Rewriting that on Linux would move a loop that must not stall onto a machine that sometimes does. The Pi sends intent. One node is allowed to speak MAVLink, as sysid 245. A mission is a client of <code>/rupsha/move</code> and cannot, by construction, write a motor command.</p>
-      <figure>
-        <img src="assets/diagrams/split.svg" alt="The Raspberry Pi thinks and speaks MAVLink as sysid 245. The Pixhawk runs ArduRover.">
-        <figcaption>Bench tools speak as sysid 246. A tool that heartbeats as 245 and then exits latches the failsafe: flashing yellow, HOLD, until reboot. The essay is <a href="the-shift.html">The Shift</a>.</figcaption>
+    <div class="pair pair--top">
+      <figure class="shot">
+        <img src="imgs/board.jpg" alt="A drawing of a flight-controller board on a dark bench, one red LED lit, a USB cable leaving the frame.">
+        <figcaption>A drawing of the class of board, not a photo of the Pixhawk on the bench. The real board is a Pixhawk 2.4.8 running ArduRover 4.7.2. Its LED is the status, and it is read by a person, not by this page.</figcaption>
       </figure>
-      <figure>
-        <img src="assets/diagrams/failsafe.svg" alt="From the last heartbeat: GCS lost at 2 seconds, the board acts at 3.5, HOLD seen in SITL at 3.6.">
-        <figcaption><code>FS_GCS_TIMEOUT</code> 2 s plus <code>FS_TIMEOUT</code> 1.5 s. The test bound is 4.5 s, one heartbeat after the board acts. Seen at 3.6 s.</figcaption>
-      </figure>
+      <div>
+        <p>The Raspberry Pi runs the manager, the vision node, localization, and the executive. It speaks MAVLink. It does not own the motors.</p>
+        <p>The Pixhawk owns the motors, the failsafes, and the last heartbeat it heard. If the Pi goes quiet, the board goes to HOLD on its own clock. That was measured in SITL at 3.6 seconds.</p>
+        <p>Tools that talk to the board use system id 246. System id 245 is the manager. A tool that heartbeats as 245 and then exits latches the GCS failsafe even while the rover is disarmed.</p>
+      </div>
     </div>
+    <figure>
+      <img src="assets/diagrams/split.svg" alt="The Pi on one side, the Pixhawk on the other, MAVLink between them.">
+    </figure>
   </div>
 </section>
 
 <section id="leg">
   <div class="wrap">
-    <div class="chapter"><div class="no">III</div><div><h2>A marker leg</h2><p class="sub">The longest loop the stack has closed</p></div></div>
+    <div class="chapter"><div class="no">III</div><div><h2>A marker leg</h2><p class="sub">GNSS gets it close. The camera finishes it.</p></div></div>
     <hr class="hair">
-    <div class="block">
-      <p>Headless Gazebo, the whole stack: manager, vision, localization, executive, against ArduRover SITL. The leg is a GNSS point 6 m short of post 3, then a search, then an approach, then a verify that refuses to succeed because the rover merely stopped.</p>
-      <pre class="states">NAVIGATING
-    → SEARCH_PATTERN          three frames, or drive back to a held estimate
-    → APPROACHING_MARKER      pixels inside 4.5 m, else a point short of the tag
-    → VERIFYING_MARKER        the tag still in view, range ≤ 2.5 m, most of 1.5 s
-    → done
-
-a loss under the retry cap goes back a state
-stuck reverses, then tries the search again</pre>
-      <figure id="approach-fig">
-        <img src="assets/diagrams/approach.svg" alt="Side view at the end of the leg. The camera is 1.69 m from the tag and looks 17 degrees up. An 8 degree downward look passed under the tag.">
-        <figcaption>One run, 30 s. Camera 1.69 m from the tag face (limit 2.5 m). The body stayed 2.09 m from the post centre (limit 0.8 m). The dashed ray is the pitch that failed verify: the window was looking at the pole. <code>test_gazebo_marker_leg.py</code>.</figcaption>
-      </figure>
-      <p class="quiet">Each fix uses the rover pose at the image's capture time, interpolated across 3 s, plus the camera's 0.33 m offset on the Gazebo model. Ten fixes, weighted by one over range squared, held 30 s. A retry that already has three of them drives back. It does not spiral the estimate away.</p>
+    <figure>
+      <img src="assets/diagrams/states.svg" alt="Four states: navigating, search, approach, verify.">
+    </figure>
+    <div class="pair">
+      <p>The GNSS point is 6 m short of the post. Search needs three frames of the same tag. One or two frames are forgotten after 15 seconds. Three or more become a place on the ground, and a retry drives back to that place instead of starting the spiral again.</p>
+      <p>Inside 4.5 m the approach servos on the pixels. Outside that it aims a point short of the tag by the standoff minus the board's waypoint radius. It calls the leg done when the camera is within 1.75 m of the estimate and the tag was seen on this pass.</p>
     </div>
+    <figure>
+      <img src="assets/diagrams/approach.svg" alt="Side view. Camera at 0.44 m, tag at 0.88 m, 1.69 m apart. A red ray pitched 17 degrees up reaches the tag. A dashed ray pitched 8 degrees down misses it.">
+    </figure>
+    <p>The first finish put the camera 1.67 m from the tag and then failed the verify, because the camera was pitched 8 degrees down and the tag had left the top of the frame. The model now pitches the camera 17 degrees up. The next headless run finished in 30 seconds, camera at 1.69 m, body 2.09 m from the post.</p>
+  </div>
+</section>
+
+<section id="quiet">
+  <div class="wrap">
+    <div class="chapter"><div class="no">IV</div><div><h2>The quiet Pi</h2><p class="sub">The board does not wait to be told the link is dead</p></div></div>
+    <hr class="hair">
+    <figure>
+      <img src="assets/diagrams/failsafe.svg" alt="A timeline. Last heartbeat at 0. GCS lost at 2.0 seconds. The board acts at 3.5 seconds. HOLD was seen at 3.6 seconds.">
+    </figure>
+    <p>Link liveness is any message from the board inside 2 seconds, not a heartbeat alone. Mode and armed state still come from the last heartbeat. A guided velocity command expires after 3 seconds if nothing refreshes it.</p>
   </div>
 </section>
 
 <section id="record">
   <div class="wrap">
-    <div class="chapter"><div class="no">IV</div><div><h2>The record</h2><p class="sub">Four states, and they are not blended</p></div></div>
+    <div class="chapter"><div class="no">V</div><div><h2>The record</h2><p class="sub">If it was not measured, this page does not claim it</p></div></div>
     <hr class="hair">
-    <div class="block">
-      <p><b>FIELD</b> is outdoors, on the rover. There is no row in that state. <b>BENCH</b> is the real board on a desk, or the real code closing a loop against SITL or Gazebo. <b>BUILT</b> is code and tests that have not closed a loop. <b>BLOCKED</b> says what it is waiting on.</p>
-      <table class="ledger">
-        <thead><tr><th>Waiting</th><th>On</th></tr></thead>
-        <tbody>
-          <tr><td>Arming the real board</td><td>a person, for the compass, and the safety switch</td></tr>
-          <tr><td>Pi-in-the-loop</td><td>the Pi 4 is powered off. The last run closed a square to 0.73 m by truth, at 11.5 % of the Pi</td></tr>
-          <tr><td>Sim-on-Hardware</td><td>the simulated IMUs never report healthy. Recorded. Not to be re-flashed on a whim</td></tr>
-          <tr><td>Anything outdoors</td><td>a chassis, motors, drivers, a battery</td></tr>
-        </tbody>
-      </table>
-      <p>The full table, each row with the test that pins it, is the <a href="capability-map.html">capability map</a>. When a field run disagrees with a row, the field run wins and <a href="https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/measured-bars.md">the ledger</a> keeps both.</p>
-    </div>
+    <table class="ledger">
+      <thead><tr><th>Claim</th><th>Where</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>1.00 m/s, heading held</td><td>Gazebo lockstep</td><td class="num">pass</td></tr>
+        <tr><td>HOLD after the companion goes quiet</td><td>SITL</td><td class="num">3.6 s</td></tr>
+        <tr><td>ArUco at 4.5 m, camera 17 deg up</td><td>Gazebo, 2026-10-23</td><td class="num">+3.6%</td></tr>
+        <tr><td>ArUco at 3.0 m, same day</td><td>Gazebo</td><td class="num">+3.0%</td></tr>
+        <tr><td>One marker leg</td><td>Gazebo, headless</td><td class="num">1.69 m</td></tr>
+        <tr><td>Body clear of the post</td><td>same run</td><td class="num">2.09 m</td></tr>
+        <tr><td>Outdoor runs</td><td>there is no chassis</td><td class="num">0</td></tr>
+      </tbody>
+    </table>
+    <p>The full table, each row with the test that pins it, is the <a href="capability-map.html">capability map</a>. When a field run disagrees with a row, the field run wins and <a href="https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/measured-bars.md">the ledger</a> keeps both.</p>
   </div>
 </section>
 
 <section id="read">
   <div class="wrap">
-    <div class="chapter"><div class="no">V</div><div><h2>Read next</h2><p class="sub">The page is the tour. The rooms are the repository.</p></div></div>
+    <div class="chapter"><div class="no">VI</div><div><h2>Read next</h2><p class="sub">The page is the tour. The rooms are the repository.</p></div></div>
     <hr class="hair">
-    <div class="block">
-      <table class="ledger">
-        <tbody>
-          <tr><td><a href="the-shift.html">The Shift</a></td><td>why the Pi does not drive the motors</td></tr>
-          <tr><td><a href="capability-map.html">Capability map</a></td><td>every claim, and the test beside it</td></tr>
-          <tr><td><a href="https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/HANDOFF.md">Handoff</a></td><td>where the work is, for the next person</td></tr>
-          <tr><td><a href="https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/sota/README.md">What was read</a></td><td>MRDT, Michigan, Waterloo's older branch. Nothing copied</td></tr>
-          <tr><td><a href="https://github.com/fh1m/rupsha_ws">The source</a></td><td>Muhammad Fahim Faisal. MIT.</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <table class="ledger">
+      <tbody>
+        <tr><td><a href="the-shift.html">The Shift</a></td><td>why the Pi does not drive the motors</td></tr>
+        <tr><td><a href="capability-map.html">Capability map</a></td><td>every claim, and the test beside it</td></tr>
+        <tr><td><a href="https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/HANDOFF.md">Handoff</a></td><td>where the work is, for the next person</td></tr>
+        <tr><td><a href="https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/sota/README.md">What was read</a></td><td>MRDT, Michigan, Waterloo's older branch. Nothing copied</td></tr>
+        <tr><td><a href="https://github.com/fh1m/rupsha_ws">The source</a></td><td>Muhammad Fahim Faisal. MIT.</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 </main>
@@ -191,7 +200,7 @@ stuck reverses, then tries the search again</pre>
   var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
   var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
   function mark() {
-    var y = window.scrollY + 120;
+    var y = window.scrollY + 140;
     var current = sections[0];
     sections.forEach(function (s) { if (s && s.offsetTop <= y) current = s; });
     links.forEach(function (a, i) {

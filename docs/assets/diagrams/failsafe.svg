@@ -1,20 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 200" role="img">
-  <title>Companion silence to HOLD</title>
-  <rect width="880" height="200" fill="#000000"/>
-  <text x="28" y="32" fill="#e4e8ef" font-family="ui-sans-serif, sans-serif" font-size="20">The Pi goes quiet</text>
-  <line x1="80" y1="110" x2="800" y2="110" stroke="#2b3448" stroke-width="1.5"/>
-  <g font-family="ui-monospace, monospace" font-size="12" fill="#e4e8ef">
-    <line x1="80" y1="104" x2="80" y2="116" stroke="#e4e8ef"/>
-    <text x="80" y="136" text-anchor="middle">0</text>
-    <text x="80" y="88" text-anchor="middle" fill="#98a2b4">last heartbeat</text>
-    <line x1="400" y1="100" x2="400" y2="120" stroke="#f88701" stroke-width="2"/>
-    <text x="400" y="88" text-anchor="middle" fill="#f88701">2.0 s, GCS lost</text>
-    <text x="400" y="156" text-anchor="middle" fill="#7b8598">FS_GCS_TIMEOUT</text>
-    <line x1="640" y1="96" x2="640" y2="124" stroke="#ff0000" stroke-width="2"/>
-    <text x="640" y="78" text-anchor="middle" fill="#ff5747">3.5 s, board acts</text>
-    <text x="640" y="176" text-anchor="middle" fill="#7b8598">+ FS_TIMEOUT 1.5 s</text>
-    <circle cx="656" cy="110" r="6" fill="#ff0000"/>
-    <text x="720" y="96" fill="#ff5747">3.6 s</text>
-    <text x="720" y="114" fill="#ff5747">HOLD, seen</text>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 360" width="1160" height="360" role="img">
+  <style>
+    text{font-family:Zed Mono,ui-monospace,monospace}
+    .h{font-size:20px;fill:#fff;font-weight:700;letter-spacing:-.02em}
+    .l{font-size:11px;fill:#7b8598;letter-spacing:.12em}
+    .v{font-size:13px;fill:#e4e8ef}
+    .r{font-size:13px;fill:#ff5747}
+    .a{font-size:13px;fill:#f88701}
+    .big{font-size:42px;fill:#fff;font-weight:700;letter-spacing:-.04em}
+  </style>
+  <rect width="1160" height="360" fill="#000"/>
+  <text x="36" y="40" class="h">The Pi goes quiet</text>
+  <text x="36" y="64" class="l">SITL. THE BOARD ACTS. THE TEST SEES IT ON THE NEXT HEARTBEAT.</text>
+  <line x1="80" y1="180" x2="1080" y2="180" stroke="#2b3448" stroke-width="2"/>
+  <line x1="80" y1="168" x2="80" y2="192" stroke="#e4e8ef" stroke-width="2"/>
+  <text x="80" y="150" text-anchor="middle" class="v">0</text>
+  <text x="80" y="220" text-anchor="middle" class="l">LAST HEARTBEAT</text>
+  <line x1="524" y1="164" x2="524" y2="196" stroke="#f88701" stroke-width="2"/>
+  <text x="524" y="150" text-anchor="middle" class="a">2.0 s</text>
+  <text x="524" y="220" text-anchor="middle" class="l">GCS LOST</text>
+  <line x1="856" y1="156" x2="856" y2="204" stroke="#ff0000" stroke-width="3"/>
+  <text x="856" y="140" text-anchor="middle" class="r">3.5 s  board acts</text>
+  <circle cx="878" cy="180" r="8" fill="#ff0000"/>
+  <text x="900" y="176" class="r">3.6 s</text>
+  <text x="900" y="196" class="r">HOLD, seen</text>
+  <line x1="36" y1="270" x2="1124" y2="270" stroke="#1a2030"/>
+  <text x="36" y="332" class="big">3.6 s</text>
+  <text x="210" y="320" class="v">from the last heartbeat to HOLD.</text>
+  <text x="210" y="342" class="l">FS_GCS_TIMEOUT 2 s  +  FS_TIMEOUT 1.5 s. TEST BOUND 4.5 s.</text>
 </svg>

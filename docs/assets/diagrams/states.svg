@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 280" width="1160" height="280" role="img">
+  <style>
+    text{font-family:Zed Mono,ui-monospace,monospace}
+    .h{font-size:18px;fill:#fff;font-weight:700}
+    .b{font-size:13px;fill:#e4e8ef}
+    .s{font-size:11px;fill:#7b8598}
+  </style>
+  <rect width="1160" height="280" fill="#000"/>
+  <text x="36" y="36" class="h">One marker leg</text>
+  <rect x="36" y="70" width="200" height="72" fill="#05070c" stroke="#ff0000"/>
+  <text x="136" y="100" text-anchor="middle" class="b">NAVIGATING</text>
+  <text x="136" y="122" text-anchor="middle" class="s">GNSS, 6 m short</text>
+  <line x1="236" y1="106" x2="276" y2="106" stroke="#ff0000" stroke-width="2"/>
+  <rect x="276" y="70" width="220" height="72" fill="#05070c" stroke="#e4e8ef"/>
+  <text x="386" y="100" text-anchor="middle" class="b">SEARCH</text>
+  <text x="386" y="122" text-anchor="middle" class="s">3 frames, or drive back</text>
+  <line x1="496" y1="106" x2="536" y2="106" stroke="#ff0000" stroke-width="2"/>
+  <rect x="536" y="70" width="250" height="72" fill="#05070c" stroke="#e4e8ef"/>
+  <text x="661" y="100" text-anchor="middle" class="b">APPROACH</text>
+  <text x="661" y="122" text-anchor="middle" class="s">pixels inside 4.5 m</text>
+  <line x1="786" y1="106" x2="826" y2="106" stroke="#ff0000" stroke-width="2"/>
+  <rect x="826" y="70" width="280" height="72" fill="#05070c" stroke="#ff0000"/>
+  <text x="966" y="100" text-anchor="middle" class="b">VERIFY</text>
+  <text x="966" y="122" text-anchor="middle" class="s">tag in view, under 2.5 m</text>
+  <text x="36" y="190" class="s">A LOSS UNDER THE RETRY CAP GOES BACK ONE STATE.</text>
+  <text x="36" y="214" class="s">STUCK REVERSES, THEN TRIES THE SEARCH AGAIN.</text>
+  <text x="36" y="248" class="b">Each fix uses the pose at the image's capture time, not the pose now.</text>
+</svg>

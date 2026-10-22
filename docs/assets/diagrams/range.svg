@@ -1,19 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 320" role="img">
-  <title>How far a 20 cm ArUco tag is seen</title>
-  <rect width="880" height="320" fill="#000000"/>
-  <text x="28" y="36" fill="#e4e8ef" font-family="ui-sans-serif, sans-serif" font-size="20">A 20 cm tag, 640 x 480, 70 deg lens</text>
-  <text x="28" y="58" fill="#98a2b4" font-family="ui-sans-serif, sans-serif" font-size="13">Gazebo. The rover drives itself. Truth is the camera to the tag face.</text>
-  <g font-family="ui-monospace, monospace" font-size="13">
-    <text x="28" y="104" fill="#ff5747">8 m / 11 px / never</text>
-    <line x1="250" y1="100" x2="810" y2="100" stroke="#ff0000" stroke-width="12" stroke-dasharray="3 7"/>
-    <text x="28" y="148" fill="#f88701">6 m / 16 px / flickers</text>
-    <line x1="250" y1="144" x2="670" y2="144" stroke="#f88701" stroke-width="12"/>
-    <text x="28" y="196" fill="#ff5747">4.5 m / 19 px / +3.6%</text>
-    <line x1="250" y1="192" x2="565" y2="192" stroke="#ff0000" stroke-width="16"/>
-    <text x="28" y="244" fill="#ff5747">3.0 m / 29 px / +3.0%</text>
-    <line x1="250" y1="240" x2="460" y2="240" stroke="#ff0000" stroke-width="16"/>
-  </g>
-  <line x1="368" y1="78" x2="368" y2="258" stroke="#e4e8ef" stroke-width="1.25"/>
-  <text x="368" y="74" text-anchor="middle" fill="#e4e8ef" font-family="ui-monospace, monospace" font-size="11">leg finished / 1.69 m</text>
-  <text x="28" y="296" fill="#7b8598" font-family="ui-sans-serif, sans-serif" font-size="12">2026-10-23, camera pitched 17 deg up. 6 m and 8 m are the earlier detection limit.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 560" width="1160" height="560" role="img">
+  <style>
+    text{font-family:Zed Mono,ui-monospace,monospace}
+    .h{font-size:22px;fill:#fff;font-weight:700;letter-spacing:-.02em}
+    .l{font-size:13px;fill:#7b8598;letter-spacing:.12em}
+    .v{font-size:16px;fill:#e4e8ef}
+    .r{font-size:16px;fill:#ff5747}
+    .a{font-size:16px;fill:#f88701}
+    .big{font-size:48px;fill:#fff;font-weight:700;letter-spacing:-.04em}
+  </style>
+  <rect width="1160" height="560" fill="#000"/>
+  <text x="40" y="48" class="h">A 20 cm tag, 640 by 480, 70 degree lens</text>
+  <text x="40" y="76" class="l">GAZEBO. TRUTH IS THE CAMERA TO THE TAG FACE.</text>
+
+  <text x="40" y="150" class="v">8 m</text>
+  <text x="130" y="150" class="l">11 px</text>
+  <rect x="280" y="128" width="70" height="28" fill="none" stroke="#7b8598" stroke-width="2"/>
+  <text x="370" y="150" class="l">NEVER SEEN</text>
+
+  <text x="40" y="230" class="a">6 m</text>
+  <text x="130" y="230" class="l">16 px</text>
+  <rect x="280" y="208" width="220" height="28" fill="#f88701"/>
+  <text x="520" y="230" class="a">FLICKERS</text>
+
+  <text x="40" y="310" class="r">4.5 m</text>
+  <text x="150" y="310" class="l">19 px</text>
+  <rect x="280" y="288" width="420" height="28" fill="#ff0000"/>
+  <text x="720" y="310" class="r">+3.6%   EVERY FRAME</text>
+
+  <text x="40" y="390" class="r">3.0 m</text>
+  <text x="150" y="390" class="l">29 px</text>
+  <rect x="280" y="368" width="560" height="28" fill="#ff0000"/>
+  <text x="860" y="390" class="r">+3.0%   EVERY FRAME</text>
+
+  <line x1="40" y1="450" x2="1120" y2="450" stroke="#1a2030"/>
+  <text x="40" y="520" class="big">+3%</text>
+  <text x="210" y="508" class="v">long at every station that sees the tag.</text>
+  <text x="210" y="534" class="l">STILL UNEXPLAINED. 2026-10-23. CAMERA PITCHED 17 DEG UP.</text>
 </svg>

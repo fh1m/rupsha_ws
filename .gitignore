@@ -18,6 +18,7 @@ eeprom.bin
 mav.parm
 *.jpg
 !src/rupsha_sim/models/**/*.jpg
+!docs/imgs/*.jpg
 
 # python
 __pycache__/
