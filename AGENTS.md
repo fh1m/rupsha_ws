@@ -1,7 +1,9 @@
 # rupsha_ws agent notes
 
-**Start at [`CLAUDE.md`](CLAUDE.md)** — the vehicle, the board traps, the architecture rules and how
-to run everything. The full document set, in reading order: [`.claude/context/README.md`](.claude/context/README.md).
+**If you were told to continue the work, read [`.claude/context/HANDOFF.md`](.claude/context/HANDOFF.md)
+first.** It has the open task, the board's state today, and the rules that have already cost a
+session. Then [`CLAUDE.md`](CLAUDE.md) for the vehicle, the traps and the architecture, and the
+rest of the docs in order: [`.claude/context/README.md`](.claude/context/README.md).
 Host and box history: [`NOTES.md`](NOTES.md).
 
 Dev env: distrobox `rupsha_dev` (Ubuntu 24.04, ROS 2 Jazzy, CUDA 12.8, cuDNN 9, torch cu128).

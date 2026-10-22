@@ -27,6 +27,7 @@ setup(
             'manager = rupsha_control.rover_manager_node:main',
             'bringup_check = rupsha_control.bringup_check:main',
             'param_audit = rupsha_control.param_audit:main',
+            'compass_cal = rupsha_control.compass_cal:main',
         ],
     },
 )

@@ -35,6 +35,21 @@ def test_manifest_outputs_are_fresh():
     assert r.returncode == 0, r.stdout + r.stderr
 
 
+def test_tools_never_speak_as_the_companion():
+    """A tool that speaks as the failsafe sysid and exits latches the board in HOLD."""
+    from rupsha_control.manifest import Companion
+    from rupsha_control.param_audit import BASELINE, load
+    assert Companion.TOOLS_SYSID != Companion.SYSID
+    assert load(BASELINE)['MAV_GCS_SYSID'] == Companion.SYSID != Companion.TOOLS_SYSID
+    # the manager is the companion; SITL tests may be, since SITL restarts per test
+    companions = {'rover_manager_node.py', 'conftest.py', 'test_sitl_scenarios.py'}
+    files = list(py_sources(include_tests=True)) + list((WS / 'tools').glob('*.py'))
+    for f in files:
+        for call in re.findall(r'ArduRover\((.*)$', f.read_text(), re.M):
+            if f.name not in companions and f.name != 'ardurover.py':
+                assert 'sysid=' in call, f'{f.relative_to(WS)}: ArduRover({call}) speaks as {Companion.SYSID}'
+
+
 def test_only_the_driver_imports_pymavlink():
     """One node touches the board, through one module."""
     pat = re.compile(r'^\s*(import pymavlink|from pymavlink)', re.M)

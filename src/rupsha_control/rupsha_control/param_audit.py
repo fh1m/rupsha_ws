@@ -72,7 +72,8 @@ def diff(expected: dict, actual: dict) -> list:
 
 def resolve_url(url: str) -> str:
     if any(ch in url for ch in '*?['):
-        hits = sorted(glob.glob(url))
+        # Pixhawk1-BL is the bootloader, and it sorts ahead of the flight port.
+        hits = sorted(p for p in glob.glob(url) if '-BL' not in pathlib.Path(p).name)
         if not hits:
             raise SystemExit(f'no device matches {url}')
         return hits[0]
@@ -90,8 +91,9 @@ def main(argv=None) -> int:
 
     from .fc.ardurover import ArduRover
     from .fc.base import CommandRejected
+    from .manifest import Companion
     expected = load(*(args.parm or [BASELINE]))
-    fc = ArduRover(resolve_url(args.url), baud=args.baud)
+    fc = ArduRover(resolve_url(args.url), baud=args.baud, sysid=Companion.TOOLS_SYSID)
     try:
         fc.wait_board(timeout=15.0)
         fc.start()

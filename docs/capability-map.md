@@ -16,7 +16,7 @@ SITL/Gazebo — the column says which) · **BUILT** (code and tests, never close
 | Neutral outputs while disarmed | BENCH (board) | `test_disarmed_outputs_are_neutral` |
 | Mode changes confirmed by heartbeat | BENCH (board) | `test_mode_round_trip_while_disarmed` |
 | An arming refusal carries the board's reason | BENCH (board) | `test_an_arm_refusal_carries_the_boards_reason` |
-| Arming the real board | **BLOCKED** | compass calibration needs a person to rotate the board |
+| Arming the real board | **BLOCKED** | compass calibration needs a person to rotate the board: `compass_cal` (start/cancel checked on the board; a fit needs the person) |
 
 ## 2. Control (verbs on `/rupsha/move`)
 
@@ -58,6 +58,7 @@ SITL/Gazebo — the column says which) · **BUILT** (code and tests, never close
 |---|---|---|
 | ArduRover SITL with the baseline | BENCH | `test_sitl_scenarios.py` |
 | Gazebo Harmonic + SITL JSON lockstep, 6WD model | BENCH | `test_gazebo_lockstep.py` (3 tests, truth = Gazebo pose) |
+| Whole stack in Gazebo (`sim.launch.py`: manager, vision, localization, executive) on a marker leg: GNSS leg, search spiral, tag 3 found by the vision node | BENCH (Gazebo) | three runs, scored on `/sim/ground_truth/odometry`; the rover reached 2.2 m of the post once, but the approach still ends LOST ([B-32](../.claude/context/BUGS.md)) |
 | ArUco range against Gazebo truth, rover driving itself to stations | BENCH | `test_gazebo_aruco.py`: ~3 % long; reliable to 4.5 m, edge at 6 m for 20 cm tags ([measured-bars](../.claude/context/measured-bars.md)) |
 | Seeded worlds (`flat_ci`, `playpen`) with ArUco posts | BUILT | `test_sim_contract.py` (fresh, deterministic, tags decode) |
 | Board-in-the-loop | BENCH | `pytest -m board` |

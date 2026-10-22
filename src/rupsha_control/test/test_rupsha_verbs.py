@@ -223,6 +223,39 @@ def test_vision_approach_lost_target():
     assert r.run('vision_approach', tag_id=3).outcome == Outcome.LOST
 
 
+def test_vision_approach_closes_in_on_a_tag_seen_once_past_its_detection_range():
+    """Gazebo: one frame at ~7 m, then nothing until ~6 m. Stopping there never re-acquires."""
+    fc, r = armed()
+    post_n, decode_m = 8.0, 6.0
+    first = {'t': None}
+
+    def vision():
+        rng = post_n - fc.north
+        if first['t'] is None:
+            first['t'] = fc.clock.t
+        if rng <= decode_m or fc.clock.t == first['t']:
+            return [Det('tag', 3, 0.0, rng, fc.clock.t)]
+        return []
+    r.vision = vision
+    res = r.run('vision_approach', tag_id=3, standoff=2.0)
+    assert res.success, res.message
+    assert post_n - fc.north == pytest.approx(2.0, abs=0.3)
+
+
+def test_coasting_on_a_lost_tag_never_crosses_the_standoff():
+    fc, r = armed()
+    post_n, standoff = 3.0, 2.0
+    seen = {'n': 0}
+
+    def vision():
+        seen['n'] += 1
+        return [Det('tag', 3, 0.0, post_n - fc.north, fc.clock.t)] if seen['n'] <= 3 else []
+    r.vision = vision
+    assert r.run('vision_approach', tag_id=3, standoff=standoff).outcome == Outcome.LOST
+    fc.sleep(5.0)
+    assert post_n - fc.north > standoff
+
+
 def test_tag_zero_is_a_real_id():
     fc, r = armed()
     r.vision = lambda: [Det('tag', 0, 0.0, 1.0, fc.clock.t)]

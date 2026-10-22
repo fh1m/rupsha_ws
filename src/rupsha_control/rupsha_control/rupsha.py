@@ -400,12 +400,18 @@ class Rupsha:
         t0 = self.clock()
         if (blocked := self._host_preflight()):
             return blocked
-        state = {'last_seen': self.clock(), 'close': 0}
+        state = {'last_seen': self.clock(), 'close': 0, 'coast': 0.0, 'blind_m': 0.0, 'prev': 0.0}
 
         def step(elapsed):
             hit = self._match(target_name, tag_id)
             now = self.clock()
+            dt, state['prev'] = elapsed - state['prev'], elapsed
             if hit is None:
+                # Near the detection limit the tag flickers, and closing in is what brings
+                # it back: hold the last bearing for up to half the last-seen gap.
+                state['blind_m'] -= state['coast'] * dt
+                if state['blind_m'] > 0.0:
+                    return state['coast'], 0.0
                 if now - state['last_seen'] > TARGET_LOST_S:
                     return self._done(Outcome.LOST, f'approach: target unseen {TARGET_LOST_S:.0f} s', t0)
                 return 0.0, 0.0
@@ -421,13 +427,16 @@ class Rupsha:
                                       t0, final=hit.range_m, err=gap)
                 return 0.0, 0.0
             state['close'] = 0
+            state['coast'] = 0.0
             if elapsed > timeout:
                 return self._done(Outcome.TIMEOUT, f'approach: {gap:.1f} m short', t0,
                                   final=hit.range_m, err=gap)
             yaw_rate = max(-30.0, min(30.0, APPROACH_YAW_KP * hit.bearing_deg))
             if abs(hit.bearing_deg) > APPROACH_TURN_FIRST_DEG:
                 return 0.0, yaw_rate
-            return min(abs(speed), 0.5 * gap + 0.1), yaw_rate
+            v = min(abs(speed), 0.5 * gap + 0.1)
+            state['coast'], state['blind_m'] = v, 0.5 * gap
+            return v, yaw_rate
         return self._stream('vision_approach', None, step, t0)
 
     # ── settings ─────────────────────────────────────────────────────────────

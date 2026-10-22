@@ -3,7 +3,7 @@
 Where Rupsha is, what is left, what is blocked. If this disagrees with
 [capability-map](../../docs/capability-map.md), fix whichever is wrong in the same change.
 
-**Last updated 2026-10-21.** Nothing is FIELD: the chassis does not exist.
+**Last updated 2026-10-22.** Nothing is FIELD: the chassis does not exist.
 
 ## Done
 
@@ -15,12 +15,18 @@ Where Rupsha is, what is left, what is blocked. If this disagrees with
 | C. ArUco vs truth | the rover drives to stations in Gazebo; range ~3 % long, reach ~6 m for a 20 cm tag ([measured-bars §3](measured-bars.md#3-gazebo-harmonic--sitl-lockstep-rupsha_skid-flat_ci)) | BENCH |
 | D1. Board-in-the-loop | six bench tests against the real Pixhawk | BENCH |
 | D3. Pi-in-the-loop | the stack on the Pi 4 drives SITL on the laptop, scored against truth | BENCH |
+| C. Whole stack in Gazebo | `sim.launch.py` brings up manager, vision, localization and executive against SITL + Gazebo; a marker leg runs GNSS leg → search → tag found | BENCH (Gazebo); approach open (B-32) |
+| CI | ruff, manifest freshness, build and pytest on apt OpenCV 4.6 like the Pi; ArduRover SITL scenarios built from source | green on GitHub Actions |
 | D2. Sim-on-Hardware | built, flashed, booted; simulated IMUs never healthy, so it does not arm; Rover 4.7.2 + parameters restored and verified | BLOCKED, recorded ([sim-and-hitl §5](platform/sim-and-hitl.md#5-sim-on-hardware)) |
 
 ## In progress
 
-- **CI** — ruff, pytest, manifest freshness, colcon test, SITL scenarios on GitHub Actions, using
-  apt OpenCV 4.6 like the Pi.
+- **Marker approach in the whole stack** ([B-32](BUGS.md)) — the tag is found at the 6 m decode
+  edge and lost during the approach. Next: steer to the tag's estimated world position, confirm
+  several hits before approaching; then a `pytest -m gazebo` test of the whole leg.
+- **The rest of the marker survey** — MRDT's geolocated fallback and MRover's waypoint spiral are
+  in [sota §9](sota/README.md#9-how-the-teams-that-win-urc-approach-a-marker). BYU, Waterloo,
+  Alberta and the Polish teams were not read.
 
 ## Blocked
 
@@ -36,7 +42,7 @@ Where Rupsha is, what is left, what is blocked. If this disagrees with
    mixing respond to each verb, disarmed-on-loss verified by pulling USB.
 2. **Front camera on the Pi**: `sensors_check` PASS; intrinsics calibrated into
    `rupsha_sensors/config/calibration/`; YOLO and ArUco rates measured on the Pi.
-3. **Vision in the loop in Gazebo**: `vision_approach` on a post, scored against Gazebo truth.
+3. **Vision in the loop in Gazebo**: the approach finishing at the standoff (B-32), as a test.
 4. **Executive in Gazebo**: a seeded URC-style course end to end (`urc_autonomy`).
 5. **Chassis**: measure the real cruise pair, steering feed-forward and stuck thresholds; the Gazebo
    model regenerated with Rupsha's geometry.

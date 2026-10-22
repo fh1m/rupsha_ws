@@ -106,7 +106,8 @@ def gen_py(m: dict) -> str:
     L += ['class Companion:',
           f'    SYSID = {c["sysid"]}',
           f'    COMPID = {c["compid"]}',
-          f'    HEARTBEAT_HZ = {c["heartbeat_hz"]!r}', '', '']
+          f'    HEARTBEAT_HZ = {c["heartbeat_hz"]!r}',
+          f'    TOOLS_SYSID = {c["tools_sysid"]}', '', '']
     fw = m['firmware']
     L += ['class Firmware:',
           f'    VEHICLE = {fw["vehicle"]!r}',
@@ -147,7 +148,7 @@ def gen_reference(m: dict) -> str:
          'closes the loop; **host** = the Pi streams setpoints and checks abort every tick; ',
          '**executive** = the autonomy executive; **meta** = reads and settings.', '',
          f'Companion MAVLink identity: sysid **{m["companion"]["sysid"]}**, compid '
-         f'**{m["companion"]["compid"]}**. Firmware floor: **{m["firmware"]["vehicle"]} '
+         f'**{m["companion"]["compid"]}**; bench tools use sysid **{m["companion"]["tools_sysid"]}**. Firmware floor: **{m["firmware"]["vehicle"]} '
          f'{m["firmware"]["min_version"]}** (`{m["firmware"]["git"]}`, target `{m["firmware"]["board_target"]}`).', '',
          '| verb | runs on | always available | fields (default) | what it does |',
          '|---|---|---|---|---|']

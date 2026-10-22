@@ -5,8 +5,12 @@ same mistake cannot come back quietly. Newest first within each section.
 
 ## Open
 
-None in software. The ArUco range reads ~3 % long in Gazebo, which is recorded and not yet
-explained ([measured-bars §3](measured-bars.md#3-gazebo-harmonic--sitl-lockstep-rupsha_skid-flat_ci)).
+| # | Bug | Where | Status |
+|---|---|---|---|
+| B-32 | The full stack in Gazebo finds tag 3 but loses it during the approach (4 of 4 approaches across two runs, `LOST: target unseen 2 s`). The first sighting is at ~7 m, past the 6 m decode edge, often at ±30° bearing, so the rover pivots on a detection up to 0.5 s old | `rupsha.py` `vision_approach`, executive search → approach handover | open — candidates: steer to the tag's estimated world position instead of the last bearing, confirm N hits before approaching |
+
+The ArUco range reads ~3 % long in Gazebo, recorded and not yet explained
+([measured-bars §3](measured-bars.md#3-gazebo-harmonic--sitl-lockstep-rupsha_skid-flat_ci)).
 
 ## Hardware observations
 
@@ -19,6 +23,8 @@ explained ([measured-bars §3](measured-bars.md#3-gazebo-harmonic--sitl-lockstep
 
 | # | Bug | Fix | Pinned by |
 |---|---|---|---|
+| B-28 | The board flashed yellow in HOLD (`system_status` CRITICAL) after every bench session: `param_audit`, `bringup_check` and the board tests spoke as 245, so their exit started the GCS failsafe, which latches even disarmed | bench tools speak as `Companion.TOOLS_SYSID` 246 (manifest); only the manager is 245 | `test_tools_never_speak_as_the_companion`; board left `system_status` 4 after audit + 6 bench tests |
+| B-27 | "PreArm: 3D Accel calibration needed" with the calibration intact: the post-Sim-on-Hardware restore skipped sensor IDs, so EEPROM held `INS_ACC_ID` 0 while RAM showed the detected 1246218 | IDs written back with `PARAM_SET`, rebooted; the restore procedure now says so | pre-arm list after reboot: compass and safety switch only |
 | B-23 | The failsafe test's 3.5 s bound ignored that HOLD is only *seen* in the next 1 Hz HEARTBEAT; it passed on heartbeat phase and failed at 3.6 s | bound derived from the source: `FS_GCS_TIMEOUT` + `FS_TIMEOUT` + one HEARTBEAT period = 4.5 s | `test_companion_heartbeat_loss_holds_the_rover` |
 | B-22 | The Pi-in-the-loop truth recorder imported pymavlink itself, breaking the one-boundary rule | it reads SITL through `ArduRover` (sysid 250) with a listener | `test_only_the_driver_imports_pymavlink` |
 | B-20 | `localization_node.py` held `'/rupsha/wheel_speeds'` as a literal | `Topics.WHEEL_SPEEDS` | `test_no_topic_literals_outside_the_manifest` |
@@ -44,6 +50,9 @@ explained ([measured-bars §3](measured-bars.md#3-gazebo-harmonic--sitl-lockstep
 
 | # | Bug | Fix | Pinned by |
 |---|---|---|---|
+| B-31 | "board link lost" mid-search with the Gazebo GUI open: the GUI drops the sim to 0.4x real time, SITL's 1 Hz HEARTBEAT then arrives every 2.5 s of wall time, past the 2 s stale bound | the link is alive on *any* message from the board; mode and armed still come from the last HEARTBEAT | `test_a_slow_sim_with_fresh_telemetry_is_alive`, `test_a_silent_board_is_dead` |
+| B-30 | `vision_approach` stopped the moment the tag dropped out; at the decode edge a stopped rover never gets the pixels back, so it reported LOST | drive on along the last bearing for up to half the last-seen gap, which can never cross the standoff | `test_vision_approach_closes_in_on_a_tag_seen_once_past_its_detection_range`, `test_coasting_on_a_lost_tag_never_crosses_the_standoff` |
+| B-29 | `sim.launch.py` had never run whole: SITL's log directory did not exist, the manager died on a refused link, the executive died on a timer firing before `exe` existed and on a 15 s wait for the manager | the launch creates the directory; the manager retries the link (`link_wait_s`, 0 = forever — the Pixhawk may boot after the Pi); the executive waits for the manager, then serves | `test_manager_link.py`; the full stack ran a marker leg in Gazebo |
 | B-26 | Vision published tags as `label "aruco"`, confidence NaN; `Detection.msg` says `"tag"`, 1.0, and the executive, facade and DSL select on `"tag"` — a marker leg would never see its post. Each side's unit tests used its own assumption | vision follows the message | `test_detection_contract.py` (the message, the publisher and every consumer) |
 | B-21 | `cv2.aruco.ArucoDetector` segfaults on OpenCV 4.6 (the Pi's and CI's apt build); the laptop's 4.13 hid it | below 4.7, detection goes through the legacy `detectMarkers` + `DetectorParameters_create` | `test_aruco_legacy_api.py`; the full suite in `ros:jazzy-ros-base` with apt 4.6 (390 pass) |
 | B-07 | Missions aborted at exit with "terminate called without an active exception" | the client shuts down its executor, joins its spin thread, destroys the node, then `try_shutdown` | mission runs in `tools/pil.sh` |

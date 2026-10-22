@@ -34,6 +34,7 @@ from rupsha_interfaces.msg import Detections, RupshaState
 
 from .dispatch import BYPASS_VERBS, CommandGate, fields_for
 from .fc.ardurover import ArduRover
+from .fc.base import LinkDown
 from .heartbeat import Heartbeat
 from .loop_meter import LoopMeter
 from .manifest import VERBS, Companion, Outcome, Topics
@@ -63,10 +64,9 @@ class RoverManager(Node):
         self.extnav_uplink = p('extnav_uplink', False).value
         log = self.get_logger()
 
-        url = resolve_url(self.url)
-        log.info(f'[LINK ] connecting {url} as sysid {Companion.SYSID}/{Companion.COMPID}')
-        self.fc = ArduRover(url, baud=self.baud, log=log)
-        self.fc.wait_board(timeout=30.0)
+        self.fc = _connect_with_retry(
+            lambda url: ArduRover(url, baud=self.baud, log=log), lambda: resolve_url(self.url),
+            log, p('link_wait_s', 0.0).value)
         self.fc.start()
 
         self._dets: list = []
@@ -299,6 +299,26 @@ class RoverManager(Node):
         self.heartbeat.stop()
         self.fc.close()
         super().destroy_node()
+
+
+def _connect_with_retry(make, url_of, log, wait_s: float, retry_s: float = 2.0):
+    """make(url) until the board answers. wait_s 0 waits forever: the board may boot after us."""
+    deadline = time.monotonic() + wait_s if wait_s > 0 else math.inf
+    while True:
+        fc = None
+        try:
+            url = url_of()
+            log.info(f'[LINK ] connecting {url} as sysid {Companion.SYSID}/{Companion.COMPID}')
+            fc = make(url)
+            fc.wait_board(timeout=10.0)
+            return fc
+        except (OSError, LinkDown, SystemExit) as e:
+            if fc is not None:
+                fc.close()
+            if time.monotonic() >= deadline:
+                raise LinkDown(f'no board: {e}') from None
+            log.warning(f'[LINK ] {e}; retrying in {retry_s:.0f} s')
+            time.sleep(retry_s)
 
 
 def main(args=None):

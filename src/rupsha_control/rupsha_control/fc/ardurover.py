@@ -164,6 +164,11 @@ class ArduRover(FlightController):
             return None
         return entry[1]
 
+    def last_rx(self) -> float:
+        """Monotonic time of the newest message from the board; -inf before the first."""
+        with self._lock:
+            return max((ts for ts, _ in self._msgs.values()), default=-math.inf)
+
     def statustexts(self, since: float = 0.0) -> list:
         with self._lock:
             return [txt for ts, txt in self._texts if ts >= since]
@@ -171,8 +176,10 @@ class ArduRover(FlightController):
     # ── telemetry ────────────────────────────────────────────────────────────
     def telemetry(self) -> Telemetry:
         tel = Telemetry(firmware=self._firmware)
-        hb = self._latest('HEARTBEAT', LINK_STALE_S)
-        tel.link_alive = hb is not None
+        # Alive on any message from the board, not HEARTBEAT alone: it is 1 Hz in the
+        # board's time, so a sim running at 0.4x real time spaces it 2.5 s apart.
+        tel.link_alive = time.monotonic() - self.last_rx() <= LINK_STALE_S
+        hb = self._latest('HEARTBEAT') if tel.link_alive else None
         if hb is not None:
             tel.armed = bool(hb.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED)
             tel.mode = _MODE_NAMES.get(hb.custom_mode, f'MODE_{hb.custom_mode}')
@@ -209,9 +216,8 @@ class ArduRover(FlightController):
             tel.ekf_ok = (ekf.flags & _EKF_NAV_FLAGS) == _EKF_NAV_FLAGS
         texts = self.statustexts()
         tel.last_text = texts[-1] if texts else ''
-        with self._lock:
-            stamps = [ts for ts, _ in self._msgs.values()]
-        tel.stamp = max(stamps) if stamps else NAN
+        last = self.last_rx()
+        tel.stamp = last if math.isfinite(last) else NAN
         return tel
 
     def raw(self, msg_type: str, max_age: float = 2.0):

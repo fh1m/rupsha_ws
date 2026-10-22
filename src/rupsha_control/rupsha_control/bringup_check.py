@@ -87,7 +87,7 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
 
     from .fc.ardurover import ArduRover
-    fc = ArduRover(resolve_url(args.url), baud=args.baud)
+    fc = ArduRover(resolve_url(args.url), baud=args.baud, sysid=Companion.TOOLS_SYSID)
     try:
         fc.wait_board(timeout=15.0)
         fc.start()

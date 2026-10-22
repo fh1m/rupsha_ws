@@ -24,6 +24,10 @@ companion:
   sysid: 245
   compid: 191        # MAV_COMP_ID_ONBOARD_COMPUTER
   heartbeat_hz: 2.0
+  # Bench and maintenance tools (param_audit, bringup_check, board tests). Never the
+  # companion's sysid: a tool that speaks as 245 and exits latches the GCS failsafe,
+  # and the board sits in HOLD flashing yellow until it reboots.
+  tools_sysid: 246
 
 firmware:
   vehicle: ArduRover

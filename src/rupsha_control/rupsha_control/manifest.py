@@ -69,6 +69,7 @@ class Companion:
     SYSID = 245
     COMPID = 191
     HEARTBEAT_HZ = 2.0
+    TOOLS_SYSID = 246
 
 
 class Firmware:

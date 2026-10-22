@@ -7,7 +7,7 @@ Where a verb runs is the whole design: **board** = one MAVLink message and the P
 closes the loop; **host** = the Pi streams setpoints and checks abort every tick; 
 **executive** = the autonomy executive; **meta** = reads and settings.
 
-Companion MAVLink identity: sysid **245**, compid **191**. Firmware floor: **ArduRover 4.7.2** (`fb773567`, target `Pixhawk1`).
+Companion MAVLink identity: sysid **245**, compid **191**; bench tools use sysid **246**. Firmware floor: **ArduRover 4.7.2** (`fb773567`, target `Pixhawk1`).
 
 | verb | runs on | always available | fields (default) | what it does |
 |---|---|---|---|---|

@@ -35,6 +35,12 @@ parameters right after flashing: [`records/ardurover_4.7.2_factory.parm`](record
 To redo it: `ros2 run rupsha_control param_audit --apply`, reboot, then `param_audit` alone —
 exit 0 is an empty diff.
 
+**After any parameter wipe, write the sensor IDs back too** (B-27). The board refills
+`INS_ACC_ID` / `INS_GYR_ID` in RAM from the detected sensor, so a read-back looks right, while
+EEPROM holds 0. The pre-arm check compares the two and says "3D Accel calibration needed" with
+the offsets intact. `param_audit` skips them (they match in RAM); write them with `PARAM_SET`
+(1246218 / 2163722 on this board), then reboot.
+
 ## 3. The baseline, line by line
 
 | Parameter | Value | Why |
@@ -73,6 +79,24 @@ in the hardware baseline: there is no chassis to measure.
 **The GCS failsafe keys on one sysid.** Only HEARTBEAT / MANUAL_CONTROL / RC override from
 `MAV_GCS_SYSID` reset the timer. A base-station GCS on 245 would mask a dead Pi.
 
+**…and it latches even disarmed.** Anything that speaks as 245 and then exits starts the
+failsafe: the board goes to HOLD (`system_status` CRITICAL) and flashes yellow until it reboots
+or 245 speaks again. Bench tools (`param_audit`, `bringup_check`, `compass_cal`, the board
+tests) therefore use `Companion.TOOLS_SYSID` 246; only the manager is 245 (B-28, pinned by
+`test_tools_never_speak_as_the_companion`).
+
+**Reading the LED (Pixhawk1 RGB, ArduPilot's order of precedence).**
+
+| Pattern | Meaning here |
+|---|---|
+| flashing yellow | a failsafe is active — on the desk, almost always the GCS failsafe above |
+| double-flashing yellow | a pre-arm check fails (today: compass not calibrated, safety switch not pressed) |
+| flashing blue | disarmed, pre-arm passes, no 3D GPS fix |
+| flashing green | disarmed, pre-arm passes, GPS fix |
+| solid blue / green | armed |
+
+Blue on the desk therefore needs the compass calibrated and the safety switch pressed.
+
 **Velocity streams expire after 3 s** (`Rover/mode_guided.cpp`). That is the host-loss reflex for
 streamed verbs; position targets keep going until `FS_GCS` holds the rover.
 
@@ -99,8 +123,15 @@ Rates measured during the bench run are in [measured-bars](../measured-bars.md).
 ## 6. Blocked
 
 **Compass calibration.** The board refuses to arm until someone rotates it through the onboard
-compass calibration (`MAV_CMD_DO_START_MAG_CAL`, or Mission Planner's Onboard Mag Calibration).
-It is a two-minute job for a person and impossible for software. Until then, every arming test
-runs in SITL.
+compass calibration. It is a two-minute job for a person and impossible for software:
+
+```bash
+ros2 run rupsha_control compass_cal --reboot   # then turn the board through every orientation
+```
+
+It starts ArduPilot's onboard calibration on every compass with autosave, prints progress,
+reports fitness and offsets, and reboots only after a saved fit. Ctrl-C cancels it on the board.
+The ArduSub-era offsets (306, −59, 160) are not reused: they were fitted with the compass
+disabled, in a different install. Until then, every arming test runs in SITL.
 
 **Not attempted, deliberately:** arming with anything on the outputs.

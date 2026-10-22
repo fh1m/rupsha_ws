@@ -1,5 +1,7 @@
 # Rupsha — the rover autonomy stack
 
+Continuing someone else's session: [`.claude/context/HANDOFF.md`](.claude/context/HANDOFF.md) first.
+
 > **Project**: Rupsha — a ROS 2 Jazzy control / mission / perception stack for an
 > autonomous ground rover, built on the fundamentals of [Mongla](https://github.com/fh1m/mongla_ws).
 > **This codebase**: `rupsha_ws`. **Platform today**: a **Pixhawk 2.4.8** (`Pixhawk1` target)
@@ -61,7 +63,11 @@ Gazebo crawled at 0.55 m/s. Set `WP_SPEED` for speed; set the pair only from a m
 ⛔ **The GCS failsafe counts only the GCS sysid's HEARTBEAT / MANUAL_CONTROL / RC override.**
 `MAV_GCS_SYSID=245` is the Pi. A base-station GCS must **not** use 245, or it masks a dead Pi.
 With the Pi silent the board holds at `FS_GCS_TIMEOUT` + `FS_TIMEOUT` = 3.5 s (seen in SITL at
-3.6 s, through the 1 Hz HEARTBEAT).
+3.6 s, through the 1 Hz HEARTBEAT). It latches **even disarmed**: a tool that speaks as 245 and
+exits leaves the board in HOLD, flashing yellow. Bench tools use `Companion.TOOLS_SYSID` 246.
+
+⛔ **After a parameter wipe, persist `INS_ACC_ID` / `INS_GYR_ID`.** RAM shows the detected ID,
+EEPROM holds 0, and pre-arm says "3D Accel calibration needed" with the offsets intact.
 
 ⛔ **ExtNav as EKF source without `VISO_TYPE` fails pre-arm.** `rupsha_extnav.parm` sets both;
 `bringup_check` names the mismatch.
@@ -70,8 +76,8 @@ With the Pi silent the board holds at `FS_GCS_TIMEOUT` + `FS_TIMEOUT` = 3.5 s (s
 `ARMING_SKIPCHK`. A parm file from a forum post is probably the old names.
 
 ⛔ **The board refuses to arm: "Compass not calibrated".** BLOCKED on a person rotating the
-board through the compass calibration. Accel calibration was restored from the ArduSub backup
-(same IMU id 1246218). The refusal reaches the caller verbatim — that path is tested.
+board: `ros2 run rupsha_control compass_cal --reboot`. Accel calibration was restored from the
+ArduSub backup (same IMU id 1246218). The refusal reaches the caller verbatim — that path is tested.
 
 ---
 

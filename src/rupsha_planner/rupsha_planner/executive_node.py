@@ -33,13 +33,14 @@ class ExecutiveNode:
     def __init__(self):
         self.node = rclpy.create_node('rupsha_executive')
         self.pub = self.node.create_publisher(AutonomyStatus, Topics.AUTONOMY_STATUS, 10)
-        self.server = ActionServer(self.node, Move, Topics.AUTONOMY_ACTION,
-                                   execute_callback=self.execute, goal_callback=self.accept)
-        self.node.create_timer(0.5, self.publish)
-        self.port = RosPort(self.node)
+        self.node.get_logger().info(f'[LINK ] waiting for {Topics.MOVE_ACTION}')
+        self.port = RosPort(self.node, connect_timeout=None)
         self.exe = Executive(self.port, on_status=lambda _: self.publish())
         self.worker = None
         self.last = None
+        self.server = ActionServer(self.node, Move, Topics.AUTONOMY_ACTION,
+                                   execute_callback=self.execute, goal_callback=self.accept)
+        self.node.create_timer(0.5, self.publish)
         self.node.get_logger().info(f'[READY] serving {Topics.AUTONOMY_ACTION}')
 
     def accept(self, goal):

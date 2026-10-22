@@ -15,7 +15,8 @@
 | `heartbeat.py` | the companion heartbeat on its own thread — `FS_GCS` depends on it never starving |
 | `loop_meter.py` | exact / average / 1 %-low loop rates, published as diagnostics |
 | `bringup_check.py` | before the manager: link, firmware, baseline, EKF source, sensors — PASS / FAIL / ABSENT with reasons |
-| `param_audit.py` | diff the board against the repo's parm files; `--apply` to load |
+| `param_audit.py` | diff the board against the repo's parm files; `--apply` to load. Speaks as `Companion.TOOLS_SYSID`, never 245 |
+| `compass_cal.py` | onboard compass calibration for a person holding the board: progress, a saved fit, `--reboot`. Ctrl-C cancels it on the board |
 | `manifest.py` | **generated** from `manifest/rupsha.yaml` — never edit |
 
 ## Configuration
@@ -36,4 +37,5 @@
 
 `test_board_wire.py` (masks, frames, version parsing) · `test_rupsha_verbs.py` (every verb on
 `FakeRover`) · `test_dispatch.py` · `test_bringup_and_params.py` · `test_board_bench.py`
-(`-m board`, the real Pixhawk).
+(`-m board`, the real Pixhawk) · `test_compass_cal.py` · `test_manager_link.py` (the manager
+retries a board that is not up yet).

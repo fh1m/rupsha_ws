@@ -55,3 +55,29 @@ def test_loop_meter_low1_sees_the_stall():
     s = m.stats()
     assert s['avg'] > 9.5
     assert math.isclose(s['low1'], 1 / ((0.3 + 0.1) / 2), rel_tol=1e-6)
+
+
+def _driver_with(ages):
+    """An ArduRover with no port, holding messages received `age` seconds ago."""
+    import threading
+    import time
+    from collections import deque
+    from types import SimpleNamespace
+    d = ar.ArduRover.__new__(ar.ArduRover)
+    d._lock, d._texts, d._firmware = threading.Lock(), deque(), (4, 7, 2)
+    now = time.monotonic()
+    msgs = {'HEARTBEAT': SimpleNamespace(base_mode=0, custom_mode=int(RoverMode.HOLD)),
+            'ATTITUDE': SimpleNamespace(yaw=0.0, yawspeed=0.0)}
+    d._msgs = {t: (now - ages[t], msgs[t]) for t in ages}
+    return d
+
+
+def test_a_slow_sim_with_fresh_telemetry_is_alive():
+    """Gazebo at 0.4x real time spaces the 1 Hz HEARTBEAT 2.5 s apart; ATTITUDE still flows."""
+    tel = _driver_with({'HEARTBEAT': 2.5, 'ATTITUDE': 0.1}).telemetry()
+    assert tel.link_alive and tel.mode == 'HOLD'
+
+
+def test_a_silent_board_is_dead():
+    tel = _driver_with({'HEARTBEAT': ar.LINK_STALE_S + 0.5, 'ATTITUDE': ar.LINK_STALE_S + 0.5}).telemetry()
+    assert not tel.link_alive and tel.armed is not True

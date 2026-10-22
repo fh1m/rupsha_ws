@@ -30,6 +30,7 @@ sys.path[:0] = [str(WS / 'src' / 'rupsha_control')]
 
 from rupsha_control import geo  # noqa: E402
 from rupsha_control.fc.ardurover import ArduRover  # noqa: E402
+from rupsha_control.manifest import Companion  # noqa: E402
 from rupsha_control.rupsha import Rupsha  # noqa: E402
 
 
@@ -51,7 +52,7 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
     url = next(iter(sorted(pathlib.Path('/').glob(args.url.lstrip('/')))), args.url)
 
-    fc = ArduRover(str(url))
+    fc = ArduRover(str(url), sysid=Companion.TOOLS_SYSID)
     fc.wait_board(20)
     fc.start()
     stop = threading.Event()

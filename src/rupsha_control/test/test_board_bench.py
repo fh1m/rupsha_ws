@@ -8,15 +8,17 @@ Pixhawk1 is plugged in.
     pytest -m board src/rupsha_control
 """
 
-import glob
 import time
 
 import pytest
 
 from rupsha_control.manifest import Companion, Firmware, Outcome
-from rupsha_control.param_audit import BASELINE, diff, load
+from rupsha_control.param_audit import BASELINE, diff, load, resolve_url
 
-PORTS = sorted(glob.glob('/dev/serial/by-id/usb-ArduPilot_Pixhawk1*'))
+try:
+    PORTS = [resolve_url('/dev/serial/by-id/usb-ArduPilot_Pixhawk1*')]
+except SystemExit:
+    PORTS = []
 
 pytestmark = [pytest.mark.board,
               pytest.mark.skipif(not PORTS, reason='no Pixhawk1 on USB')]
@@ -27,7 +29,7 @@ def board():
     from rupsha_control.fc.ardurover import ArduRover
     from rupsha_control.heartbeat import Heartbeat
     from rupsha_control.rupsha import Rupsha
-    fc = ArduRover(PORTS[0], baud=115200)
+    fc = ArduRover(PORTS[0], baud=115200, sysid=Companion.TOOLS_SYSID)
     fc.wait_board(timeout=20)
     fc.start()
     beat = Heartbeat(fc.send_heartbeat, 1.0 / Companion.HEARTBEAT_HZ, None)

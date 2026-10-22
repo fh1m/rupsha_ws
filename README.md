@@ -35,13 +35,14 @@ the chassis does not exist yet.
 | Capability | State | Evidence |
 |---|---|---|
 | Pixhawk 2.4.8 on ArduRover 4.7.2, baseline params audited clean | BENCH | `pytest -m board`: 6 pass on the real board |
-| Board refuses to arm (compass uncalibrated); the reason reaches the caller | BENCH / **BLOCKED** | needs a person to rotate the board |
+| Board refuses to arm (compass uncalibrated); the reason reaches the caller | BENCH / **BLOCKED** | needs a person to rotate the board: `ros2 run rupsha_control compass_cal --reboot` |
 | Companion-loss failsafe → HOLD (board acts at 3.5 s, seen at 3.6 s) | BENCH (SITL) | `test_sitl_scenarios.py` |
 | GNSS goto, drive, turn, velocity streams | BENCH (SITL) | arrival checked against SIMSTATE |
 | Gazebo 6WD lockstep: 1.00 m/s, heading held, `turn_to` without overshoot | BENCH (Gazebo) | `test_gazebo_lockstep.py`, checked against Gazebo's pose |
 | Pi-in-the-loop square drive, 0.73 m truth closure, 11.5 % CPU on the Pi | BENCH | `tools/pil.sh` |
 | Sim-on-Hardware: fits and boots on the Pixhawk, but its simulated IMUs never report healthy | **BLOCKED** | [record](.claude/context/platform/records/sim_on_hw_2026-10-21.json) |
 | ArUco range in Gazebo, rover driving itself to the post: ~3 % long, reach ~6 m for a 20 cm tag | BENCH (Gazebo) | `test_gazebo_aruco.py`, checked against Gazebo's pose |
+| Whole stack in Gazebo on a marker leg: GNSS leg → search → tag found; the approach still loses the tag | BENCH (Gazebo) / open | `sim.launch.py`, scored on Gazebo truth ([B-32](.claude/context/BUGS.md)) |
 | Autonomy executive: legs, stuck ladder, verification, detours | BUILT | 12 scenarios on a simulated-time fake board |
 | ArUco posts (OpenCV 4.6 and 4.13), YOLO objects, shadow RI-EKF | BUILT | truth tests on rendered scenes and known trajectories |
 | Anything on the ground, outdoors | BLOCKED | no chassis yet |

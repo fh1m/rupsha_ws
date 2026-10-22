@@ -39,7 +39,8 @@ def _absent_state():
 
 class RosPort:
 
-    def __init__(self, node, connect_timeout: float = 15.0):
+    def __init__(self, node, connect_timeout: float | None = 15.0):
+        """connect_timeout None waits for the manager forever (a node started before it)."""
         self.node = node
         self._move = ActionClient(node, Move, Topics.MOVE_ACTION)
         self._auto = ActionClient(node, Move, Topics.AUTONOMY_ACTION)

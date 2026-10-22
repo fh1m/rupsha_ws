@@ -10,6 +10,7 @@ above it. `test_doc_drift.py` fails if a document exists here and is not listed,
 
 ## 2. Where it stands
 
+- [HANDOFF.md](HANDOFF.md) — start here if you were told to continue the work
 - [ROADMAP.md](ROADMAP.md) — the one status file
 - [capability-map.md](capability-map.md) — every capability, its evidence, its state
 - [measured-bars.md](measured-bars.md) — every number, and what measured it

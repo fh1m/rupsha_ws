@@ -161,3 +161,39 @@ Sources: [REP-2000](https://www.ros.org/reps/rep-2000.html) ·
 [Project Chrono](https://github.com/projectchrono/chrono) ·
 [HIL removal, ArduPilot PR #17721](https://github.com/ArduPilot/ardupilot/pull/17721) ·
 [Sim-on-Hardware](https://ardupilot.org/dev/docs/sim-on-hardware.html)
+
+## 9. How the teams that win URC approach a marker
+
+Read on 2026-10-22, from the current code, because [B-32](../BUGS.md) is exactly this problem:
+Rupsha finds the tag at the edge of detection and then loses it. Two verified techniques; the
+rest of the survey (BYU, Waterloo, the Polish teams) was not finished.
+
+**Missouri S&T MRDT** keeps a geolocated position of the tag and, when the camera loses it,
+drives to that position rather than to the last pixel bearing. Only with no position history do
+they coast on the last heading — which is what Rupsha does today (B-30), and it is their
+*second* fallback.
+
+```text
+[FALLBACK 1] Visual lost. Driving to last known geolocated UTM
+[FALLBACK 2] Visual lost & no geolocation history. Coasting along last known heading.
+```
+
+Source: [`ApproachingMarkerState.cpp`](https://github.com/MissouriMRDT/Autonomy_Software/blob/main/src/states/ApproachingMarkerState.cpp)
+in [Autonomy_Software](https://github.com/MissouriMRDT/Autonomy_Software).
+
+**Michigan MRover** does not stream a spiral. `spiral_traj` builds waypoint segments around the
+GPS point (`distance_between_spirals: 3.0`, `coverage_radius: 20.0` in
+[`config/navigation.yaml`](https://github.com/umrover/mrover-ros2/blob/main/config/navigation.yaml);
+the generator is
+[`navigation/trajectory.py`](https://github.com/umrover/mrover-ros2/blob/main/navigation/trajectory.py)).
+They stop `tag_stop_threshold: 1.75` m from the tag. Waypoints let the board close each leg
+while the camera is free to look, which a continuous velocity spiral does not.
+
+**What this says for B-32.** On each detection, estimate the tag's position in the local frame
+from the rover pose *at the image time*, the bearing and the range, and keep the estimate.
+Approach by `goto_local` to a standoff short of that point, and only fall back to coasting when
+there is no estimate. Require several hits before leaving the search. Then add a
+`pytest -m gazebo` of the whole leg, headless: the GUI drops Gazebo to about 0.4× real time.
+
+**Revisit when:** a camera with more pixels, or a bigger tag, moves the reliable range past the
+GPS uncertainty of the leg. Until then the estimate is what closes the gap.

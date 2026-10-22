@@ -36,6 +36,7 @@ def _setup(context):
         gz_args[2:2] = ['-s', '--headless-rendering']
     sitl = Sitl(model='JSON', home=(home['lat'], home['lon'], home['alt'], home['heading']),
                 log_dir=os.path.expanduser('~/.ros/rupsha_sitl'))
+    sitl.dir.mkdir(parents=True, exist_ok=True)
     return [
         ExecuteProcess(cmd=gz_args, output='screen'),
         Node(package='ros_gz_bridge', executable='parameter_bridge', name='sim_bridge',
