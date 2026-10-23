@@ -40,6 +40,7 @@ class BoardSim(Node):
         self.longitude = math.nan
         self.altitude = math.nan
         self.gps_fix = 0
+        self._ticks = 0
         self.create_subscription(BoardCommand, chassis.BOARD_COMMAND, self._command, 10)
         self.create_subscription(JointState, '/joint_states', self._joints, 10)
         self.create_subscription(Imu, contract.SIM_IMU, self._imu, SENSOR_QOS)
@@ -57,14 +58,17 @@ class BoardSim(Node):
         if self.heartbeat != msg.heartbeat:
             self.heartbeat = msg.heartbeat
             self.heartbeat_at = now
-        self.speed_mms = float(msg.speed_mms)
-        self.steer_rad = float(msg.steer_rad)
+        self.speed_mms = float(msg.speed_mms) if math.isfinite(msg.speed_mms) else 0.0
+        self.steer_rad = float(msg.steer_rad) if math.isfinite(msg.steer_rad) else 0.0
 
     def _joints(self, msg: JointState) -> None:
         self.joints = {n: p for n, p in zip(msg.name, msg.position, strict=True)}
 
     def _imu(self, msg: Imu) -> None:
-        self.orientation = msg.orientation
+        q = msg.orientation
+        # A zero quaternion is not a rotation. Keep the last good one.
+        if q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z > 0.5:
+            self.orientation = q
 
     def _navsat(self, msg: NavSatFix) -> None:
         self.latitude = float(msg.latitude)
@@ -87,9 +91,12 @@ class BoardSim(Node):
         left, right = chassis.ackermann_angles(steer)
         self.drive.publish(Float64MultiArray(data=[left_w, right_w]))
         self.steer.publish(Float64MultiArray(data=[left, right]))
-        ticks = chassis.ticks_from_axle(
-            self.joints.get('rear_left_wheel_joint', 0.0),
-            self.joints.get('rear_right_wheel_joint', 0.0))
+        left_name, right_name = 'rear_left_wheel_joint', 'rear_right_wheel_joint'
+        if left_name in self.joints and right_name in self.joints:
+            left_q, right_q = self.joints[left_name], self.joints[right_name]
+            if math.isfinite(left_q) and math.isfinite(right_q):
+                self._ticks = chassis.ticks_from_axle(left_q, right_q)
+        ticks = self._ticks
         out = BoardState()
         out.header.stamp = self.get_clock().now().to_msg()
         out.encoder_ticks = ticks

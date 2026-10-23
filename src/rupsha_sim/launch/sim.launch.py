@@ -34,8 +34,13 @@ def _setup(context):
     # will not see these nodes.
     os.environ['ROS_AUTOMATIC_DISCOVERY_RANGE'] = 'LOCALHOST'
     os.environ.pop('ROS_LOCALHOST_ONLY', None)
-    from rupsha_sim import contract
-    urdf = open(urdf_path).read().replace(contract.CONTROLLERS_TOKEN, controllers)
+    from rupsha_sim import ackermann_gen, contract
+    meshes = os.path.join(share, 'models', 'rupsha_ackermann', 'meshes')
+    if not os.path.isdir(meshes):
+        raise RuntimeError(f'Ackermann meshes are not installed: {meshes}')
+    urdf = (open(urdf_path).read()
+            .replace(contract.CONTROLLERS_TOKEN, controllers)
+            .replace(ackermann_gen.MESH, meshes))
     runtime = '/tmp/rupsha_ackermann_runtime.urdf'
     with open(runtime, 'w') as handle:
         handle.write(urdf)
@@ -63,6 +68,10 @@ def _setup(context):
                  arguments=['joint_state_broadcaster', 'drive_velocity', 'steer_position',
                             '--controller-manager-timeout', '30'],
                  parameters=[{'use_sim_time': True}], output='screen'),
+        ]),
+        # board_sim is the first sign of life the contract test waits on. It has
+        # to come up after the joints, or a fresh link is a robot that cannot move.
+        TimerAction(period=10.0, actions=[
             Node(package='rupsha_sim', executable='board_sim', name='board_sim',
                  parameters=[{'use_sim_time': True}], output='screen'),
         ]),

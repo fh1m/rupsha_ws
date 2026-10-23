@@ -43,3 +43,12 @@ def test_wheel_rate_matches_the_commanded_speed():
 def test_left_turn_slows_the_inner_rear_wheel():
     left, right = chassis.wheel_rates(400.0, 0.30)
     assert 0.0 < left < right
+
+
+def test_a_bad_command_does_not_move_the_plant():
+    assert chassis.ackermann_angles(float('nan')) == (0.0, 0.0)
+    assert chassis.wheel_rates(float('nan'), 0.2) == (0.0, 0.0)
+    assert chassis.wheel_rates(float('inf'), 0.0) == (0.0, 0.0)
+    capped = chassis.wheel_rad_s(chassis.SPEED_LIMIT_MMS)
+    assert chassis.wheel_rates(5000.0, 0.0) == (capped, capped)
+    assert chassis.wheel_rates(-5000.0, 0.0) == (-capped, -capped)

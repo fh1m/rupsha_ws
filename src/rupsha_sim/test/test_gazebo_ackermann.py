@@ -146,7 +146,8 @@ def test_drive_steer_ticks_camera_and_gps(plant):
     assert e1 > e0 + 0.3, f'drove north/south instead of east: {(e0, n0)} -> {(e1, n1)}'
     dticks = node.state.encoder_ticks - ticks0
     expected = travelled * chassis.TPM
-    assert dticks == pytest.approx(expected, rel=0.35), f'{dticks} ticks, truth {expected:.0f}'
+    assert dticks == pytest.approx(expected, rel=0.35), (
+        f'{dticks} ticks from {ticks0}, truth {expected:.0f}')
     assert abs(_herr(h1, h0)) < 12.0
 
     for _ in range(50):

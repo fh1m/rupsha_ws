@@ -12,7 +12,10 @@ code is in this repo. What that result used, and this stack does not, is the
 lidar disparity extender, the lap counter, and parking on the ESP32. Those
 were enough for three laps. A longer mission has to live on the Pi, which is
 why the firmware contract stops at speed, steer, and the sensors. The chassis
-itself is not here yet. Every length
+itself is not here yet. The Gazebo picture is their printed shell: the white
+plates, the orange camera neck, the black gearbox, and the white wheels, from
+the STLs in that repo. The sim shows those print files directly. Collision stays the box and the
+cylinders, so the contact the contract test drives does not depend on the mesh. Every length
 below is their number, and the turn radius is still unmeasured on our copy.
 
 ## What is on it

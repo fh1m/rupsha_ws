@@ -23,6 +23,8 @@ TPM = 1873.0
 LINK_TIMEOUT_S = 0.5
 STATE_HZ = 50
 CONTROL_HZ = 200
+# A bad command must not launch the plant. Their running speed was under 0.5 m/s.
+SPEED_LIMIT_MMS = 1000.0
 # Nominal 3S pack. The sim has no cells to measure.
 BATTERY_V = 11.1
 
@@ -34,6 +36,8 @@ STEER_COMMAND = '/steer_position/commands'
 
 def _bicycle(steer_rad: float) -> float:
     """Bicycle angle whose inner hinge stays on the xacro stop."""
+    if not math.isfinite(steer_rad):
+        return 0.0
     half = TRACK_M / 2.0
     cap = math.atan(WHEELBASE_M / (WHEELBASE_M / math.tan(STEER_LIMIT_RAD) + half))
     return max(-cap, min(cap, steer_rad))
@@ -63,6 +67,9 @@ def wheel_rad_s(speed_mms: float) -> float:
 
 def wheel_rates(speed_mms: float, steer_rad: float) -> tuple[float, float]:
     """Left and right rear rates. A locked axle will not follow the hinges."""
+    if not math.isfinite(speed_mms):
+        speed_mms = 0.0
+    speed_mms = max(-SPEED_LIMIT_MMS, min(SPEED_LIMIT_MMS, speed_mms))
     v = speed_mms / 1000.0
     steer = _bicycle(steer_rad)
     if abs(steer) < 1e-6 or abs(v) < 1e-9:

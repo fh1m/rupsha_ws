@@ -5,11 +5,6 @@
 <robot name="rupsha_ackermann">
   <link name="base_link"/>
   <link name="chassis">
-    <visual>
-      <origin xyz="0.0650 0 0"/>
-      <geometry><box size="0.2 0.1 0.07"/></geometry>
-      <material name="red"><color rgba="0.55 0.05 0.05 1"/></material>
-    </visual>
     <collision>
       <origin xyz="0.0650 0 0"/>
       <geometry><box size="0.2 0.1 0.07"/></geometry>
@@ -22,21 +17,79 @@
   <joint name="chassis_joint" type="fixed">
     <parent link="base_link"/><child link="chassis"/>
   </joint>
+  <link name="shell_white">
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/bottom_chassis.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_white"><color rgba="0.93 0.93 0.90 1"/></material></visual>
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/middle_plate.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_white"><color rgba="0.93 0.93 0.90 1"/></material></visual>
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/top_cover.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_white"><color rgba="0.93 0.93 0.90 1"/></material></visual>
+    <inertial><mass value="0.001"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/></inertial>
+  </link>
+  <joint name="shell_white_joint" type="fixed">
+    <origin xyz="0.065 0 -0.035" rpy="0 0 -1.5708"/>
+    <parent link="chassis"/><child link="shell_white"/>
+  </joint>
+  <link name="shell_orange">
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/camera_neck.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_orange"><color rgba="0.95 0.42 0.08 1"/></material></visual>
+    <inertial><mass value="0.001"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/></inertial>
+  </link>
+  <joint name="shell_orange_joint" type="fixed">
+    <origin xyz="0.065 0 -0.035" rpy="0 0 -1.5708"/>
+    <parent link="chassis"/><child link="shell_orange"/>
+  </joint>
+  <link name="shell_blue">
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/camera_head.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_blue"><color rgba="0.16 0.32 0.62 1"/></material></visual>
+    <inertial><mass value="0.001"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/></inertial>
+  </link>
+  <joint name="shell_blue_joint" type="fixed">
+    <origin xyz="0.065 0 -0.035" rpy="0 0 -1.5708"/>
+    <parent link="chassis"/><child link="shell_blue"/>
+  </joint>
+  <link name="shell_black">
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/diff_left.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_black"><color rgba="0.08 0.08 0.09 1"/></material></visual>
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/diff_right.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_black"><color rgba="0.08 0.08 0.09 1"/></material></visual>
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/servo_mount.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_black"><color rgba="0.08 0.08 0.09 1"/></material></visual>
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/motor_mount.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_black"><color rgba="0.08 0.08 0.09 1"/></material></visual>
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/gearbox_left_a.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_black"><color rgba="0.08 0.08 0.09 1"/></material></visual>
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/gearbox_left_b.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_black"><color rgba="0.08 0.08 0.09 1"/></material></visual>
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/gearbox_right.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_black"><color rgba="0.08 0.08 0.09 1"/></material></visual>
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/shaft_lock_left.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_black"><color rgba="0.08 0.08 0.09 1"/></material></visual>
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/shaft_lock_right.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_black"><color rgba="0.08 0.08 0.09 1"/></material></visual>
+    <visual><geometry><mesh filename="__RUPSHA_MESH__/axle_support.stl" scale="0.001 0.001 0.001"/></geometry><material name="shell_black"><color rgba="0.08 0.08 0.09 1"/></material></visual>
+    <inertial><mass value="0.001"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/></inertial>
+  </link>
+  <joint name="shell_black_joint" type="fixed">
+    <origin xyz="0.065 0 -0.035" rpy="0 0 -1.5708"/>
+    <parent link="chassis"/><child link="shell_black"/>
+  </joint>
+  <link name="shell_brass">
+    <visual><origin xyz="-0.020 0.038 -0.007"/><geometry><cylinder radius="0.003" length="0.050"/></geometry><material name="brass"><color rgba="0.72 0.58 0.28 1"/></material></visual>
+    <visual><origin xyz="-0.020 -0.038 -0.007"/><geometry><cylinder radius="0.003" length="0.050"/></geometry><material name="brass"><color rgba="0.72 0.58 0.28 1"/></material></visual>
+    <visual><origin xyz="0.122 0.038 -0.007"/><geometry><cylinder radius="0.003" length="0.050"/></geometry><material name="brass"><color rgba="0.72 0.58 0.28 1"/></material></visual>
+    <visual><origin xyz="0.122 -0.038 -0.007"/><geometry><cylinder radius="0.003" length="0.050"/></geometry><material name="brass"><color rgba="0.72 0.58 0.28 1"/></material></visual>
+    <inertial><mass value="0.001"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/></inertial>
+  </link>
+  <joint name="shell_brass_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="chassis"/><child link="shell_brass"/>
+  </joint>
 
   <link name="camera_link">
-    <visual><geometry><box size="0.02 0.04 0.02"/></geometry></visual>
     <inertial><mass value="0.02"/>
       <inertia ixx="1e-5" ixy="0" ixz="0" iyy="1e-5" iyz="0" izz="1e-5"/></inertial>
   </link>
   <joint name="camera_joint" type="fixed">
-    <origin xyz="0.10 0 0.08" rpy="0 -0.29671 0"/>
+    <origin xyz="0.172 0 0.070" rpy="0 -0.29671 0"/>
     <parent link="chassis"/><child link="camera_link"/>
   </joint>
 
   <link name="rear_left_wheel">
-    <visual><geometry><cylinder radius="0.02" length="0.008"/></geometry>
-      <material name="black"><color rgba="0.05 0.05 0.05 1"/></material></visual>
     <collision><geometry><cylinder radius="0.02" length="0.008"/></geometry></collision>
+    <visual><origin xyz="0 0 -0.00378"/><geometry><mesh filename="__RUPSHA_MESH__/wheel.stl" scale="0.88889 0.88889 0.88889"/></geometry><material name="wheel_white"><color rgba="0.95 0.95 0.93 1"/></material></visual>
+
     <inertial><mass value="0.05"/>
       <inertia ixx="5.266667e-06" ixy="0" ixz="0" iyy="5.266667e-06" iyz="0" izz="1.000000e-05"/></inertial>
   </link>
@@ -46,9 +99,9 @@
     <axis xyz="0 0 1"/>
   </joint>
   <link name="rear_right_wheel">
-    <visual><geometry><cylinder radius="0.02" length="0.008"/></geometry>
-      <material name="black"><color rgba="0.05 0.05 0.05 1"/></material></visual>
     <collision><geometry><cylinder radius="0.02" length="0.008"/></geometry></collision>
+    <visual><origin xyz="0 0 -0.00378"/><geometry><mesh filename="__RUPSHA_MESH__/wheel.stl" scale="0.88889 0.88889 0.88889"/></geometry><material name="wheel_white"><color rgba="0.95 0.95 0.93 1"/></material></visual>
+
     <inertial><mass value="0.05"/>
       <inertia ixx="5.266667e-06" ixy="0" ixz="0" iyy="5.266667e-06" iyz="0" izz="1.000000e-05"/></inertial>
   </link>
@@ -80,9 +133,9 @@
   </joint>
 
   <link name="front_left_wheel">
-    <visual><geometry><cylinder radius="0.02" length="0.008"/></geometry>
-      <material name="black"><color rgba="0.05 0.05 0.05 1"/></material></visual>
     <collision><geometry><cylinder radius="0.02" length="0.008"/></geometry></collision>
+    <visual><origin xyz="0 0 -0.00378"/><geometry><mesh filename="__RUPSHA_MESH__/wheel.stl" scale="0.88889 0.88889 0.88889"/></geometry><material name="wheel_white"><color rgba="0.95 0.95 0.93 1"/></material></visual>
+
     <inertial><mass value="0.05"/>
       <inertia ixx="5.266667e-06" ixy="0" ixz="0" iyy="5.266667e-06" iyz="0" izz="1.000000e-05"/></inertial>
   </link>
@@ -92,9 +145,9 @@
     <axis xyz="0 0 1"/>
   </joint>
   <link name="front_right_wheel">
-    <visual><geometry><cylinder radius="0.02" length="0.008"/></geometry>
-      <material name="black"><color rgba="0.05 0.05 0.05 1"/></material></visual>
     <collision><geometry><cylinder radius="0.02" length="0.008"/></geometry></collision>
+    <visual><origin xyz="0 0 -0.00378"/><geometry><mesh filename="__RUPSHA_MESH__/wheel.stl" scale="0.88889 0.88889 0.88889"/></geometry><material name="wheel_white"><color rgba="0.95 0.95 0.93 1"/></material></visual>
+
     <inertial><mass value="0.05"/>
       <inertia ixx="5.266667e-06" ixy="0" ixz="0" iyy="5.266667e-06" iyz="0" izz="1.000000e-05"/></inertial>
   </link>
@@ -166,4 +219,13 @@
   <gazebo reference="rear_right_wheel"><mu1>1.2</mu1><mu2>1.2</mu2></gazebo>
   <gazebo reference="front_left_wheel"><mu1>1.0</mu1><mu2>1.0</mu2></gazebo>
   <gazebo reference="front_right_wheel"><mu1>1.0</mu1><mu2>1.0</mu2></gazebo>
+  <gazebo reference="shell_white"><material><ambient>0.93 0.93 0.91 1</ambient><diffuse>0.93 0.93 0.91 1</diffuse><specular>0.20 0.20 0.18 1</specular></material></gazebo>
+  <gazebo reference="shell_orange"><material><ambient>0.95 0.40 0.06 1</ambient><diffuse>0.95 0.40 0.06 1</diffuse><specular>0.20 0.20 0.18 1</specular></material></gazebo>
+  <gazebo reference="shell_blue"><material><ambient>0.15 0.32 0.70 1</ambient><diffuse>0.15 0.32 0.70 1</diffuse><specular>0.20 0.20 0.18 1</specular></material></gazebo>
+  <gazebo reference="shell_black"><material><ambient>0.08 0.08 0.09 1</ambient><diffuse>0.08 0.08 0.09 1</diffuse><specular>0.20 0.20 0.18 1</specular></material></gazebo>
+  <gazebo reference="shell_brass"><material><ambient>0.74 0.60 0.30 1</ambient><diffuse>0.74 0.60 0.30 1</diffuse><specular>0.20 0.20 0.18 1</specular></material></gazebo>
+  <gazebo reference="rear_left_wheel"><material><ambient>0.94 0.94 0.92 1</ambient><diffuse>0.94 0.94 0.92 1</diffuse><specular>0.20 0.20 0.18 1</specular></material></gazebo>
+  <gazebo reference="rear_right_wheel"><material><ambient>0.94 0.94 0.92 1</ambient><diffuse>0.94 0.94 0.92 1</diffuse><specular>0.20 0.20 0.18 1</specular></material></gazebo>
+  <gazebo reference="front_left_wheel"><material><ambient>0.94 0.94 0.92 1</ambient><diffuse>0.94 0.94 0.92 1</diffuse><specular>0.20 0.20 0.18 1</specular></material></gazebo>
+  <gazebo reference="front_right_wheel"><material><ambient>0.94 0.94 0.92 1</ambient><diffuse>0.94 0.94 0.92 1</diffuse><specular>0.20 0.20 0.18 1</specular></material></gazebo>
 </robot>
