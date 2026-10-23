@@ -22,6 +22,7 @@ from rupsha_sim.sitl import find_ardupilot
 
 pytestmark = [
     pytest.mark.gazebo,
+    pytest.mark.skip(reason='ArduRover is not part of this stack. The ArUco bars stay in the ledger as the previous body.'),
     pytest.mark.skipif(find_ardupilot() is None, reason='ArduRover SITL not built'),
     pytest.mark.skipif(gazebo.available() is not None, reason=str(gazebo.available())),
 ]

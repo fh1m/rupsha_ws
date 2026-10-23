@@ -215,7 +215,9 @@ def world_sdf(sc: dict) -> str:
 
 def outputs() -> dict:
     """Every generated file: path -> str | bytes."""
+    from . import ackermann_gen
     out = dict(model_gen.outputs())
+    out.update(ackermann_gen.outputs())
     tags = set()
     for name, spec in WORLDS.items():
         sc = scenario(name, **spec)

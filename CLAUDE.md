@@ -91,8 +91,9 @@ ArduSub backup (same IMU id 1246218). The refusal reaches the caller verbatim â€
    state, topics. `tools/gen_manifest.py` emits the messages, `manifest.py` and the command
    reference; `--check` fails CI when stale. Code uses `Topics.X`, never a literal.
 4. **NaN means absent.** No default ever masquerades as a reading. ABSENT is not PASS.
-5. **Reflexes on the board, thinking on the Pi.** Rate/speed PIDs, skid mixing, S-curves,
-   EKF3 and every failsafe are ArduRover's. The Pi sends intent (GUIDED targets, 10 Hz streams).
+5. **Reflexes on the board, thinking on the Pi.** The body being built puts the speed loop,
+   the steer and the stop on the ESP32. The Pi sends speed, steer and a heartbeat. The
+   Pixhawk and ArduRover are the previous body. The SITL launch is deleted.
 6. **Neutral on startup; heartbeat on its own thread; cooperative abort** checked every tick.
 7. **Truth tests, not agreement tests.** Sim tests check Gazebo's pose or SITL's SIMSTATE,
    never the EKF the rover steered by. A test that cannot fail is deleted.
@@ -106,11 +107,11 @@ ArduSub backup (same IMU id 1246218). The refusal reaches the caller verbatim â€
 source install/setup.bash
 pytest                                    # unit + guards; sitl/gazebo/board markers skip when absent
 pytest -m sitl src/rupsha_sim             # ArduRover SITL, built-in skid physics
-pytest -m gazebo src/rupsha_sim           # Gazebo Harmonic + SITL JSON lockstep (headless)
-pytest -m board src/rupsha_control        # the real Pixhawk on USB
+pytest -m gazebo src/rupsha_sim           # Ackermann plant, plus the previous skid lockstep
+pytest -m board src/rupsha_control        # the previous Pixhawk on USB
 
-ros2 launch rupsha_sim sim.launch.py world:=playpen headless:=true
-ros2 launch rupsha_planner rupsha.launch.py            # the real rover
+ros2 launch rupsha_sim sim.launch.py headless:=true    # Ackermann plant and board_sim
+ros2 launch rupsha_planner rupsha.launch.py            # the real rover, when it exists
 ros2 run rupsha_planner rupsha move_forward --duration 2 --speed 0.5
 ros2 run rupsha_planner mission square_drive [--dry-run]
 ros2 run rupsha_control bringup_check --bench          # before the manager: is the board ready?
@@ -126,8 +127,9 @@ Traps: [`platform/box-and-pi.md`](.claude/context/platform/box-and-pi.md).
 
 ## 5. Simulation and the hardware chain
 
-- **SITL** (built-in skid physics): fastest truth for control logic.
-- **Gazebo Harmonic + SITL JSON lockstep**: camera, IMU and the 6WD model; `ArduPilotPlugin`
+- **Ackermann plant** (the default): Gazebo Harmonic, `gz_ros2_control`, `board_sim`. No ArduRover.
+- **SITL** (previous body, built-in skid physics): fastest truth for the old control logic.
+- **Gazebo Harmonic + SITL JSON lockstep** (previous body): camera, IMU and the 6WD model; `ArduPilotPlugin`
   forwards gyro/accel **unrotated**, so the IMU sensor is mounted FRD (rolled 180Â°). Left z-up,
   yaw rate arrives negated and the rover spins at full output while its attitude looks right.
 - **Board-in-the-loop**: the real Pixhawk on the desk (`pytest -m board`).
@@ -146,4 +148,5 @@ Detail: [`platform/sim-and-hitl.md`](.claude/context/platform/sim-and-hitl.md).
 - **Commits** are authored by Fahim Faisal only â€” no co-author trailers.
 - **Do not edit generated files** (`Move.action`, `RupshaState.msg`, `AutonomyStatus.msg`,
   `manifest.py`, `reference/commands.md`, everything under `rupsha_sim/{models,worlds,scenarios}`
-  and `config/bridge.yaml`). Edit the manifest or the generator and regenerate.
+  and `config/bridge.yaml`, `config/ackermann_bridge.yaml`, `config/ackermann_controllers.yaml`).
+  Edit the manifest or the generator and regenerate.

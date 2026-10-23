@@ -1,6 +1,6 @@
 # Handoff — read this if you were told to continue
 
-Written 2026-10-22, after the first whole-stack run in Gazebo. The repo is
+Written 2026-10-23, after the sim moved to the Ackermann chassis. The repo is
 [github.com/fh1m/rupsha_ws](https://github.com/fh1m/rupsha_ws). This file is the status a new
 session does not have. The rules and the traps live in [`CLAUDE.md`](../../CLAUDE.md); the
 standing state lives in [ROADMAP](ROADMAP.md), [BUGS](BUGS.md) and
@@ -24,23 +24,26 @@ The venv is `/opt/rupsha-venv` (pymavlink, ruff). `python3` from apt does not ha
 
 | Thing | State |
 |---|---|
-| Pixhawk 2.4.8 on USB, ArduRover 4.7.2, baseline audit | on the desk, 0 parameters differ. Pre-arm fails on **compass not calibrated** and **hardware safety switch** only |
-| Compass calibration | needs a person: `ros2 run rupsha_control compass_cal --reboot`, then rotate the board. Do not start it and walk away; it holds the compass in calibration until it finishes or you cancel |
-| The Pi 4 | **down.** Do not SSH it, do not run `tools/pil.sh`, do not treat Pi-in-the-loop as runnable |
-| Whole stack in Gazebo | a marker leg finishes: GNSS leg, search, approach, verify. Headless `test_gazebo_marker_leg.py` passed once — camera 1.69 m from the tag face, body 2.09 m from the post, `all 1 legs complete` in 30 s ([B-32](BUGS.md), [B-33](BUGS.md)) |
-| The public page | [fh1m.github.io/rupsha_ws](https://fh1m.github.io/rupsha_ws/), built from `docs/` in Mongla's red and black, with the same faces |
-| CI | green: lint, build, pytest on apt OpenCV 4.6, and the SITL scenarios |
-| Anything outdoors | impossible. There is no chassis |
+| The body being built | Ackermann, 20 cm by 10 cm, one driven axle, GPS on, lidar off. Geometry and the disagreement about the steer limit are in [chassis.md](platform/chassis.md). The real radius is unmeasured |
+| The board contract | speed in mm/s, steer in radians, ticks, a quaternion, a GPS fix. [firmware-contract.md](platform/firmware-contract.md). `board_sim` fills it. There is no PlatformIO tree yet |
+| Default sim | Gazebo Harmonic. `sim.launch.py` spawns the Ackermann plant and `board_sim`. No ArduRover. `test_gazebo_ackermann.py` passed once, scored on Gazebo truth: speed, steer, ticks, camera, GPS, and a dead link |
+| Pixhawk 2.4.8, ArduRover 4.7.2, Pi 4 | the **previous** computer. The board is still on the desk. Pre-arm fails on compass and the safety switch. The Pi 4 is down. Do not SSH it |
+| Compass calibration | only with a person, and only for that previous Pixhawk: `ros2 run rupsha_control compass_cal --reboot`. Do not start it and walk away. This chassis does not use that compass |
+| Previous body in Gazebo | the SITL launch is gone. One marker leg passed once — camera 1.69 m from the tag face, body 2.09 m from the post ([B-32](BUGS.md)). That number is not this chassis |
+| The public page | [fh1m.github.io/rupsha_ws](https://fh1m.github.io/rupsha_ws/), red and black. The pictures are drawings. Outdoors is 0 |
+| CI | green on the last push: lint, build, pytest on apt OpenCV 4.6, and the SITL scenarios. The new Gazebo test skips when `gz` or `gz_ros2_control` is missing |
+| Anything outdoors | still 0. The chassis is being built. It is not here |
 
 ## 3. The next task, in order
 
-1. **Compass calibration** only when a person is holding the board. Pre-arm is still the compass
-   and the safety switch. Do not start `compass_cal` and walk away.
-2. **A full course in Gazebo.** `urc_autonomy` is the seeded course the executive has not run
-   end to end. Score it on Gazebo truth, headless, the same way as the marker leg.
-3. The marker survey in [sota §9](sota/README.md#9-how-the-teams-that-win-urc-approach-a-marker)
-   has MRDT, MRover, and Waterloo's older `drive_to_ar` branch. BYU, Alberta and the Polish
-   teams have no public autonomy code that could be read. Do not copy anyone's code.
+1. **This hull's contract, on the real chassis, when it is here.** Measure the turn radius.
+   The xacro says ±45°, the old bridge said 30°, and the CAD note wants about 39°. Do not
+   write a PlatformIO tree, do not flash, and do not start a compass calibration for this body.
+2. **A serial node** replaces `board_sim` when the ESP32 exists. The planner keeps the same
+   messages. Hailo stays out of the sim until the hat is on a bench.
+3. The previous Pixhawk's compass calibration only when a person is holding that board.
+   The `urc_autonomy` course was the next Gazebo run for the skid body. It waits until the
+   executive speaks this contract.
 
 ## 4. How to run the stack
 
@@ -49,27 +52,18 @@ The venv is `/opt/rupsha-venv` (pymavlink, ruff). `python3` from apt does not ha
 sudo -u fh1m bash -lc 'cd /home/fh1m/tmp/rupsha_ws && source /opt/ros/jazzy/setup.bash && ./build_rupsha.sh && source install/setup.bash && /opt/rupsha-venv/bin/ruff check . && /opt/rupsha-venv/bin/python -m pytest -q -m "not gazebo"'
 sudo -u fh1m bash -lc 'cd /home/fh1m/tmp/rupsha_ws && source /opt/ros/jazzy/setup.bash && source install/setup.bash && export GZ_VERSION=harmonic && /opt/rupsha-venv/bin/python -m pytest -q -m gazebo src/rupsha_sim'
 
-# the whole stack, headless. This is how you test.
-sudo -u fh1m bash -lc 'cd /home/fh1m/tmp/rupsha_ws && source /opt/ros/jazzy/setup.bash && source install/setup.bash && export GZ_VERSION=harmonic && ros2 launch rupsha_sim sim.launch.py headless:=true'
+# the Ackermann plant. This is the default sim. Localhost discovery, or the
+# controller manager never sees the robot description on this subnet.
+sudo -u fh1m bash -lc 'cd /home/fh1m/tmp/rupsha_ws && source /opt/ros/jazzy/setup.bash && source install/setup.bash && export GZ_VERSION=harmonic ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST && ros2 launch rupsha_sim sim.launch.py headless:=true'
 
-# the same stack with the Gazebo window, only when a person wants to watch.
-# The window drops the sim to ~0.4x real time. Do not score timing against it.
-ros2 launch rupsha_sim sim.launch.py
-
-# one marker leg, once the stack is up and /rupsha/state prearm_ok is true
-ros2 run rupsha_planner rupsha arm
-ros2 run rupsha_planner rupsha add_marker_leg --lat <lat> --lon <lon> --tag_id 3 --radius 20
-ros2 run rupsha_planner rupsha start_autonomy
-
-# the real board
+# the previous Pixhawk, on the desk, outputs free. ArduRover is not the sim.
 ros2 run rupsha_control param_audit          # exit 0 = the baseline matches
 ros2 run rupsha_control bringup_check --bench
 pytest -m board src/rupsha_control
 ```
 
-`sim.launch.py` starts gz, the bridge, SITL (`--model JSON`), then the manager, vision,
-localization and the executive. The manager retries its link forever (`link_wait_s` 0) and the
-executive waits for the manager. Both used to die on startup (B-29).
+`sim.launch.py` starts Gazebo, the Ackermann model, the joint controllers, and `board_sim`.
+It does not start ArduRover. The old SITL launch is deleted.
 
 ## 5. Rules that have already cost a session
 

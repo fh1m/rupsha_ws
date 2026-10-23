@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rupsha — an autonomy stack for a ground rover</title>
-<meta name="description" content="A ROS 2 stack for a Pixhawk running ArduRover and a Raspberry Pi that does the thinking. Every number says which run measured it. Nothing here has been outdoors.">
+<meta name="description" content="A ROS 2 stack for a small Ackermann rover. An ESP32 owns the loop. A Pi 5 does the thinking. Every number says which body and which run measured it. Nothing here has been outdoors.">
 <meta name="theme-color" content="#000000">
 <link rel="canonical" href="https://fh1m.github.io/rupsha_ws/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Rupsha — an autonomy stack for a ground rover">
-<meta property="og:description" content="Pixhawk reflexes, a Pi that thinks, and a public record of every measurement. Nothing here has been outdoors yet, and the page says so.">
+<meta property="og:description" content="An Ackermann chassis, a board contract, and a public record of every measurement. The pictures are drawings. Nothing has been outdoors.">
 <meta property="og:url" content="https://fh1m.github.io/rupsha_ws/">
 <meta property="og:image" content="https://fh1m.github.io/rupsha_ws/imgs/hero.jpg">
 <link rel="icon" href="imgs/mark.jpg" type="image/jpeg">
@@ -33,18 +33,26 @@
         <p class="kicker">An autonomy stack <i>//</i> for a ground rover</p>
         <h1 class="title">Rupsha<span class="title__bn" lang="bn">রূপসা</span></h1>
         <p class="origin">Named for the <b>Rupsha</b>, the river that passes Khulna and continues south as the Pasur — the river the Port of Mongla stands on. <a href="https://github.com/fh1m/mongla_ws">Mongla</a> is the AUV. This is the same water, on dry land.</p>
-        <p class="lede">The ground slips, a tag is the size of a hand, and the board will hold the rover if the Pi dies. The software has to know which of those just happened, and say so.</p>
+        <p class="lede">The ground slips, a tag is the size of a hand, and the board stops the wheels if the Pi goes quiet. The software has to know which of those just happened, and say so.</p>
       </div>
       <figure class="hero__photo">
         <img src="imgs/hero.jpg" alt="A drawing of a six-wheel rover at night, red light along the body and under the wheels.">
-        <figcaption>A drawing. There is no chassis, and this is not a photograph of one.</figcaption>
+        <figcaption>A drawing of the previous body, a six-wheel skid. Not a photograph, and not the chassis being built.</figcaption>
       </figure>
     </div>
 
     <div class="measures" aria-label="Measured, and where">
       <article class="wide">
         <div>
-          <span class="label">Speed, Gazebo lockstep</span>
+          <span class="label">Ackermann contract, Gazebo</span>
+          <b>pass</b>
+          <div class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <span class="note">One headless run. Speed, steer, ticks, camera, GPS, and a dead link. Scored on Gazebo's pose. <code>test_gazebo_ackermann.py</code>. Not a field number.</span>
+      </article>
+      <article class="wide">
+        <div>
+          <span class="label">Previous body, Gazebo lockstep</span>
           <b>1.00<u>m/s</u></b>
           <div class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
         </div>
@@ -68,7 +76,7 @@
       <article class="warn">
         <span class="label">Outdoors</span>
         <b>0</b>
-        <span class="note">There is no chassis. The pictures on this page are drawings. Every number says which bench, SITL or Gazebo run it came from.</span>
+        <span class="note">The chassis is being built. Nothing has been outdoors. The pictures are drawings. The lockstep, HOLD, ArUco and marker-leg numbers are the previous skid and Pixhawk body.</span>
       </article>
     </div>
   </div>
@@ -87,14 +95,17 @@
 
 <section id="ground">
   <div class="wrap">
-    <div class="chapter"><div class="no">I</div><div><h2>The ground</h2><p class="sub">A drawing of the machine that does not exist yet</p></div></div>
+    <div class="chapter"><div class="no">I</div><div><h2>The ground</h2><p class="sub">A small Ackermann chassis, drawn because it is not here yet</p></div></div>
     <hr class="hair">
+    <figure>
+      <img src="assets/diagrams/chassis.svg" alt="Top view. A 20 by 10 cm body, one driven rear axle, two steered front wheels, a camera, no lidar.">
+    </figure>
     <figure class="shot">
       <img src="imgs/post.jpg" alt="A drawing of a six-wheel rover facing a marker cube on a pole, a red line from the camera to the cube.">
-      <figcaption>A drawing, not a photograph of a rover we own. The real machine is a Pixhawk 2.4.8 on a bench and a model in Gazebo. The cube is a 20 cm ArUco tag. The leg stops when the camera is 1.69 m from that face.</figcaption>
+      <figcaption>A drawing of the previous six-wheel body, not a photograph. The 1.69 m leg was that model. The cube is a 20 cm ArUco tag.</figcaption>
     </figure>
     <div class="pair">
-      <p>The rover does not have a chassis. What has been driven is a skid-steer model in Gazebo, and the flight controller on a desk with nothing on the motor outputs. The drawing is here so the geometry has a body. The numbers beside it were measured on the model.</p>
+      <p>The chassis being built is 20 cm by 10 cm, one driven axle, a steering servo, a camera, an IMU, and GPS. The lidar that sat on the chassis this shape came from is left off. Nothing has been outdoors. The turn radius is unmeasured.</p>
       <p>A 20 cm tag at 8 m is 11 pixels and was never seen. At 6 m it is 16 pixels and flickers. At 4.5 m and 3.0 m it is seen in every frame, and the range comes out about 3 percent long. That error is still unexplained.</p>
     </div>
     <figure>
@@ -105,17 +116,17 @@
 
 <section id="split">
   <div class="wrap">
-    <div class="chapter"><div class="no">II</div><div><h2>The split</h2><p class="sub">The Pi thinks. The board drives. Either one can die.</p></div></div>
+    <div class="chapter"><div class="no">II</div><div><h2>The split</h2><p class="sub">The Pi thinks. The board drives. A slow frame must not stall the wheels.</p></div></div>
     <hr class="hair">
     <div class="pair pair--top">
       <figure class="shot">
         <img src="imgs/board.jpg" alt="A drawing of a flight-controller board on a dark bench, one red LED lit, a USB cable leaving the frame.">
-        <figcaption>A drawing of the class of board, not a photo of the Pixhawk on the bench. The real board is a Pixhawk 2.4.8 running ArduRover 4.7.2. Its LED is the status, and it is read by a person, not by this page.</figcaption>
+        <figcaption>A drawing of the previous computer, a Pixhawk 2.4.8. Not a photograph of the ESP32 this chassis will use. The LED on the real previous board is read by a person, not by this page.</figcaption>
       </figure>
       <div>
-        <p>The Raspberry Pi runs the manager, the vision node, localization, and the executive. It speaks MAVLink. It does not own the motors.</p>
-        <p>The Pixhawk owns the motors, the failsafes, and the last heartbeat it heard. If the Pi goes quiet, the board goes to HOLD on its own clock. That was measured in SITL at 3.6 seconds.</p>
-        <p>Tools that talk to the board use system id 246. System id 245 is the manager. A tool that heartbeats as 245 and then exits latches the GCS failsafe even while the rover is disarmed.</p>
+        <p>The Raspberry Pi 5 runs vision, localization, and the plan. It sends a speed and a steer. It does not own the motors. A Hailo-8 hat is the same place Mongla puts one. The sim does not pretend to be that hat.</p>
+        <p>The ESP32 owns the encoder, the IMU, the speed loop, the steering servo, and the stop. If the heartbeat stops, it zeros the speed and centres the steer. In sim that link went stale. A real board has not been timed. The previous Pixhawk, in SITL, went to HOLD at 3.6 seconds. That number is that body.</p>
+        <p>Tools that talk to the previous Pixhawk use system id 246. System id 245 is the manager. A tool that heartbeats as 245 and then exits latches that board's failsafe even while it is disarmed.</p>
       </div>
     </div>
     <figure>
@@ -138,18 +149,18 @@
     <figure>
       <img src="assets/diagrams/approach.svg" alt="Side view. Camera at 0.44 m, tag at 0.88 m, 1.69 m apart. A red ray pitched 17 degrees up reaches the tag. A dashed ray pitched 8 degrees down misses it.">
     </figure>
-    <p>The first finish put the camera 1.67 m from the tag and then failed the verify, because the camera was pitched 8 degrees down and the tag had left the top of the frame. The model now pitches the camera 17 degrees up. The next headless run finished in 30 seconds, camera at 1.69 m, body 2.09 m from the post.</p>
+    <p>That run is the previous skid body. The first finish put the camera 1.67 m from the tag and then failed the verify, because the camera was pitched 8 degrees down and the tag had left the top of the frame. That model now pitches the camera 17 degrees up. The next headless run finished in 30 seconds, camera at 1.69 m, body 2.09 m from the post. The Ackermann plant has not run this leg.</p>
   </div>
 </section>
 
 <section id="quiet">
   <div class="wrap">
-    <div class="chapter"><div class="no">IV</div><div><h2>The quiet Pi</h2><p class="sub">The board does not wait to be told the link is dead</p></div></div>
+    <div class="chapter"><div class="no">IV</div><div><h2>The quiet Pi</h2><p class="sub">The previous board's clock. This chassis uses a heartbeat.</p></div></div>
     <hr class="hair">
     <figure>
       <img src="assets/diagrams/failsafe.svg" alt="A timeline. Last heartbeat at 0. GCS lost at 2.0 seconds. The board acts at 3.5 seconds. HOLD was seen at 3.6 seconds.">
     </figure>
-    <p>Link liveness is any message from the board inside 2 seconds, not a heartbeat alone. Mode and armed state still come from the last heartbeat. A guided velocity command expires after 3 seconds if nothing refreshes it.</p>
+    <p>The timeline above is the previous Pixhawk in SITL. On this chassis the contract is simpler: if the heartbeat stops changing, the board zeros the speed and centres the steer. The sim saw that. A real ESP32 has not.</p>
   </div>
 </section>
 
@@ -160,13 +171,14 @@
     <table class="ledger">
       <thead><tr><th>Claim</th><th>Where</th><th>Result</th></tr></thead>
       <tbody>
-        <tr><td>1.00 m/s, heading held</td><td>Gazebo lockstep</td><td class="num">pass</td></tr>
+        <tr><td>Ackermann contract</td><td>Gazebo, one headless run</td><td class="num">pass</td></tr>
+        <tr><td>Previous body, 1.00 m/s, heading held</td><td>Gazebo lockstep</td><td class="num">pass</td></tr>
         <tr><td>HOLD after the companion goes quiet</td><td>SITL</td><td class="num">3.6 s</td></tr>
         <tr><td>ArUco at 4.5 m, camera 17 deg up</td><td>Gazebo, 2026-10-23</td><td class="num">+3.6%</td></tr>
         <tr><td>ArUco at 3.0 m, same day</td><td>Gazebo</td><td class="num">+3.0%</td></tr>
         <tr><td>One marker leg</td><td>Gazebo, headless</td><td class="num">1.69 m</td></tr>
         <tr><td>Body clear of the post</td><td>same run</td><td class="num">2.09 m</td></tr>
-        <tr><td>Outdoor runs</td><td>there is no chassis</td><td class="num">0</td></tr>
+        <tr><td>Outdoor runs</td><td>the chassis is being built</td><td class="num">0</td></tr>
       </tbody>
     </table>
     <p>The full table, each row with the test that pins it, is the <a href="capability-map.html">capability map</a>. When a field run disagrees with a row, the field run wins and <a href="https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/measured-bars.md">the ledger</a> keeps both.</p>

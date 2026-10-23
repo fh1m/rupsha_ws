@@ -12,6 +12,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/AutonomyStatus.msg"
   "msg/Detection.msg"
   "msg/Detections.msg"
+  "msg/BoardCommand.msg"
+  "msg/BoardState.msg"
   DEPENDENCIES std_msgs geometry_msgs
 )
 

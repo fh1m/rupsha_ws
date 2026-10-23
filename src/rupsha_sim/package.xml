@@ -3,7 +3,7 @@
 <package format="3">
   <name>rupsha_sim</name>
   <version>0.1.0</version>
-  <description>Rupsha simulation: the sim contract, seeded worlds, the rupsha_skid Gazebo Harmonic model, ArduRover SITL launch (built-in physics or Gazebo JSON lockstep) and the scenario tests. A package in the same workspace, not a second workspace.</description>
+  <description>Rupsha simulation: the Ackermann plant and the board contract in Gazebo Harmonic, plus the previous skid model and ArduRover SITL launch. A package in the same workspace, not a second workspace.</description>
   <maintainer email="fh1m.dev@gmail.com">Muhammad Fahim Faisal</maintainer>
   <license>MIT</license>
 
@@ -11,10 +11,17 @@
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <exec_depend>rupsha_control</exec_depend>
+  <exec_depend>rupsha_interfaces</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>ros_gz_sim</exec_depend>
+  <exec_depend>gz_ros2_control</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>joint_state_broadcaster</exec_depend>
+  <exec_depend>velocity_controllers</exec_depend>
+  <exec_depend>position_controllers</exec_depend>
   <exec_depend>rupsha_vision</exec_depend>
   <exec_depend>rupsha_localization</exec_depend>
   <exec_depend>rupsha_planner</exec_depend>
-  <exec_depend>ros_gz_sim</exec_depend>
   <exec_depend>ros_gz_bridge</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
   <exec_depend>python3-opencv</exec_depend>

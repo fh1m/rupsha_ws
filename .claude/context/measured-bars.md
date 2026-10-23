@@ -4,6 +4,26 @@ A number appears in code or docs only if it is in this ledger with its source, o
 an assumption. Each row says **where** it was measured (board / SITL / Gazebo / Pi) and **how**.
 When a field run disagrees, the field run wins and this page records both.
 
+Sections 1 to 5 are the **previous body**: a six-wheel skid, a Pixhawk 2.4.8, and a Pi 4.
+They are not claimed for the Ackermann chassis.
+
+## The chassis being built
+
+Ackermann, Gazebo Harmonic, no ArduRover. One headless pass of `test_gazebo_ackermann.py`
+on 2026-10-23. The test's bars, not a taped distance:
+
+| What the test required | Bar |
+|---|---|
+| Straight, 400 mm/s, about 2 s | more than 0.4 m east on Gazebo's pose |
+| Encoder | ticks within 35 % of that distance times 1873 per metre |
+| Steer 0.35 rad | compass heading moved more than 8° |
+| Camera | 640×480, not a flat frame |
+| GPS | a fix, latitude near the world home |
+| Heartbeat stopped | `link_fresh` became false |
+
+200 Hz is the aim of the inner loop. A scope has not seen it. The turn radius is unmeasured.
+The sim battery, 11.1 V, is the nominal pack, not a cell.
+
 ## 1. The board on the desk (Pixhawk 2.4.8, ArduRover 4.7.2, USB)
 
 Measured 2026-10-21 by `test_board_bench.py` and the manager's stream counters, nothing on the outputs.

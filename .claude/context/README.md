@@ -18,7 +18,9 @@ above it. `test_doc_drift.py` fails if a document exists here and is not listed,
 
 ## 3. The platform
 
-- [platform/ardurover-pixhawk.md](platform/ardurover-pixhawk.md) — the board, its record, its traps
+- [platform/chassis.md](platform/chassis.md) — the Ackermann body being built, from Lazygo's measurements
+- [platform/firmware-contract.md](platform/firmware-contract.md) — what the ESP32 will do, and what it will not
+- [platform/ardurover-pixhawk.md](platform/ardurover-pixhawk.md) — the previous board, its record, its traps
 - [platform/sim-and-hitl.md](platform/sim-and-hitl.md) — SITL, Gazebo, board-, Pi-in-the-loop, Sim-on-Hardware
 - [platform/box-and-pi.md](platform/box-and-pi.md) — the dev box and the Pi
 - [platform/records/](platform/records/) — firmware identities and parameter dumps, as captured

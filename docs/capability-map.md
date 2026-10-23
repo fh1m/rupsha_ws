@@ -12,7 +12,21 @@ SITL/Gazebo — the column says which) · **BUILT** (code and tests, never close
 **BLOCKED** (and what unblocks it). Nothing is FIELD. Numbers come from
 [`measured-bars.md`](https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/measured-bars.md).
 
-## 1. The board
+## The body being built
+
+GPS is on. Lidar is off. The computers are a custom ESP32 board and a Raspberry Pi 5. The
+Pixhawk and the Pi 4 are the previous computer. The chassis page is
+[chassis.md](https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/platform/chassis.md).
+
+| Capability | State | Evidence |
+|---|---|---|
+| Ackermann plant: one driven axle, steer, camera, IMU, GPS, no lidar, no ArduRover | BENCH (Gazebo) | `test_gazebo_ackermann.py` |
+| Board contract: speed, steer, ticks, quaternion, GPS, dead link zeros the command | BENCH (Gazebo) | the same test, scored on Gazebo's pose |
+| ESP32 firmware, Hailo runtime, a measured turn radius | **BLOCKED** | the chassis is being built. The contract is pinned in sim first |
+
+The sections below are the previous skid and Pixhawk body unless a row says otherwise.
+
+## 1. The previous board
 
 | Capability | State | Evidence |
 |---|---|---|
@@ -68,7 +82,7 @@ SITL/Gazebo — the column says which) · **BUILT** (code and tests, never close
 |---|---|---|
 | ArduRover SITL with the baseline | BENCH | `test_sitl_scenarios.py` |
 | Gazebo Harmonic + SITL JSON lockstep, 6WD model | BENCH | `test_gazebo_lockstep.py` (3 tests, truth = Gazebo pose) |
-| Whole stack in Gazebo (`sim.launch.py`: manager, vision, localization, executive) on a marker leg: GNSS, search, approach, verify | BENCH (Gazebo) | `test_gazebo_marker_leg.py`, one headless run: `all 1 legs complete` in 30 s, camera 1.69 m from the tag face, body 2.09 m from the post ([B-32](https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/BUGS.md)) |
+| Previous body, one marker leg in Gazebo | BENCH (Gazebo) | one headless run: `all 1 legs complete` in 30 s, camera 1.69 m from the tag face, body 2.09 m from the post. The SITL launch is deleted. Not this chassis ([B-32](https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/BUGS.md)) |
 | ArUco range against Gazebo truth, rover driving itself to stations | BENCH | `test_gazebo_aruco.py`: ~3 % long; reliable to 4.5 m, edge at 6 m for 20 cm tags ([measured-bars](https://github.com/fh1m/rupsha_ws/blob/main/.claude/context/measured-bars.md)) |
 | Seeded worlds (`flat_ci`, `playpen`) with ArUco posts | BUILT | `test_sim_contract.py` (fresh, deterministic, tags decode) |
 | Board-in-the-loop | BENCH | `pytest -m board` |
@@ -79,7 +93,7 @@ SITL/Gazebo — the column says which) · **BUILT** (code and tests, never close
 
 | Item | Unblocked by |
 |---|---|
-| Arming the real board | compass calibration (a person rotating the board) |
-| Anything FIELD | the chassis, motors and drivers |
+| Arming the previous Pixhawk | compass calibration, and only while a person holds that board |
+| Anything FIELD | this chassis on the ground |
 | Vision rates on the Pi | the front camera on the Pi (ArUco and YOLO loop meters) |
 | RTK heading and truth | two u-blox F9P receivers (moving baseline) |

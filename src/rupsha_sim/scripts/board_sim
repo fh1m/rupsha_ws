@@ -1,0 +1,4 @@
+#!/usr/bin/env python3
+from rupsha_sim.board_sim import main
+
+main()

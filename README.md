@@ -1,10 +1,11 @@
 # Rupsha
 
-**An autonomy stack for a ground rover — a Pixhawk that owns the reflexes, a Raspberry Pi that
-does the thinking, one manifest that defines every verb, and a rule that no number appears in
-this repository without the measurement that produced it.**
+**An autonomy stack for a ground rover. The body being built is a small Ackermann chassis:
+one driven axle, a steering servo, a camera, an IMU, and GPS. A Raspberry Pi 5 does the
+thinking. A custom ESP32 board owns the loop that must not stall. No number appears in this
+repository without the measurement that produced it.**
 
-[![ROS 2](https://img.shields.io/badge/ROS%202-Jazzy-blue)](#run-it) [![firmware](https://img.shields.io/badge/ArduRover-4.7.2-orange)](CLAUDE.md#1-the-vehicle) [![sim](https://img.shields.io/badge/sim-Gazebo%20Harmonic%20%2B%20SITL-6a5acd)](.claude/context/platform/sim-and-hitl.md) [![on the ground](https://img.shields.io/badge/on%20the%20ground-not%20yet-critical)](#what-is-true-today) [![licence](https://img.shields.io/badge/licence-MIT-lightgrey)](LICENSE)
+[![ROS 2](https://img.shields.io/badge/ROS%202-Jazzy-blue)](#run-it) [![body](https://img.shields.io/badge/body-Ackermann-red)](.claude/context/platform/chassis.md) [![sim](https://img.shields.io/badge/sim-Gazebo%20Harmonic-6a5acd)](.claude/context/platform/sim-and-hitl.md) [![on the ground](https://img.shields.io/badge/on%20the%20ground-not%20yet-critical)](#what-is-true-today) [![licence](https://img.shields.io/badge/licence-MIT-lightgrey)](LICENSE)
 
 **[Figures](docs/index.html)** · **[The Shift](docs/the-shift.md)** · **[Capability map](docs/capability-map.md)** · [Run it](#run-it) · [A marker leg](#a-marker-leg) · [The book](.claude/context/README.md)
 
@@ -29,8 +30,21 @@ different vehicle.
 
 Every claim here is in one of four states, and they are never blurred: **FIELD** (the real rover,
 outdoors) · **BENCH** (real hardware on a desk, or the real code closing a loop against
-SITL/Gazebo) · **BUILT** (code and tests, never closed a loop) · **BLOCKED**. Nothing is FIELD:
-the chassis does not exist yet.
+SITL/Gazebo) · **BUILT** (code and tests, never closed a loop) · **BLOCKED**. Nothing is FIELD.
+The chassis is being built. It has not been outdoors.
+
+The body being built is the Ackermann chassis in
+[chassis.md](.claude/context/platform/chassis.md). The Pi talks to
+[the board contract](.claude/context/platform/firmware-contract.md). Gazebo stands in for the
+ESP32 until the board exists.
+
+| Capability | State | Evidence |
+|---|---|---|
+| Ackermann plant in Gazebo Harmonic: one driven axle, steer hinges, camera, IMU, GPS, no lidar | BENCH (Gazebo) | `test_gazebo_ackermann.py` |
+| Board contract: speed, steer, ticks at 1873 per metre, quaternion, GPS, a dead link that zeros the command | BENCH (Gazebo) | the same test, scored on Gazebo's pose |
+
+The rows below are the **previous body**: a six-wheel skid, a Pixhawk 2.4.8, and a Pi 4.
+They are not measurements of this chassis.
 
 | Capability | State | Evidence |
 |---|---|---|
@@ -45,7 +59,7 @@ the chassis does not exist yet.
 | Whole stack on a marker leg: GNSS → search → approach → verify, camera 1.69 m from the tag | BENCH (Gazebo) | `test_gazebo_marker_leg.py`, one headless run ([B-32](.claude/context/BUGS.md)) |
 | Autonomy executive: legs, stuck ladder, verification, detours | BUILT | 12 scenarios on a simulated-time fake board |
 | ArUco posts (OpenCV 4.6 and 4.13), YOLO objects, shadow RI-EKF | BUILT | truth tests on rendered scenes and known trajectories |
-| Anything on the ground, outdoors | BLOCKED | no chassis yet |
+| Anything on the ground, outdoors | BLOCKED | the chassis is being built; outdoors is still 0 |
 
 Full map, every row's evidence: [`docs/capability-map.md`](docs/capability-map.md).
 Every number and the run that produced it: [`.claude/context/measured-bars.md`](.claude/context/measured-bars.md).
@@ -63,38 +77,39 @@ The same figures, as the public page: [fh1m.github.io/rupsha_ws](https://fh1m.gi
 | see whether a claim is real | [capability map](docs/capability-map.md), then the test in that row |
 | run the stack in simulation | [Run it](#run-it), headless |
 | understand why the Pi does not drive the motors | [The Shift](docs/the-shift.md) |
-| touch the Pixhawk | [the board page](.claude/context/platform/ardurover-pixhawk.md). Compass calibration needs a person holding it |
+| read the chassis and the board contract | [chassis](.claude/context/platform/chassis.md), then [the contract](.claude/context/platform/firmware-contract.md) |
+| touch the previous Pixhawk | [the board page](.claude/context/platform/ardurover-pixhawk.md). Compass calibration needs a person holding it |
 
 ---
 
 ## How the whole thing fits together
 
-Two computers, one cable. The Pixhawk closes the loops that must not stall. The Pi does the
-work that is allowed to take 40 ms one frame and 80 ms the next, as long as it is never wrong
-about being late.
+Two computers. The ESP32 closes the loop that must not stall: encoder, IMU, speed, steer,
+and the stop. The Pi 5, with a Hailo-8 hat when it is on the bench, does the work that is
+allowed to take 40 ms one frame and 80 ms the next. A slow frame must not be able to stall
+the wheels. The sim does not pretend to be a Hailo. Vision in Gazebo is the camera.
 
-<p align="center"><img src="docs/assets/diagrams/split.svg" alt="The Pi thinks and speaks MAVLink as sysid 245. The Pixhawk runs ArduRover: rate loops, skid mix, EKF3, failsafes." width="100%"></p>
+<p align="center"><img src="docs/assets/diagrams/chassis.svg" alt="Top view of the Ackermann chassis: one driven rear axle, two steered front wheels, a camera, no lidar." width="100%"></p>
 
 ```mermaid
 flowchart LR
-  manifest["manifest/rupsha.yaml"] -.->|codegen| pi
-  base[Operator] -->|"add_*_leg, start_autonomy"| exec
-  subgraph pi [Raspberry Pi 4]
-    planner[rupsha_planner: DSL, missions, CLI] --> exec[executive]
-    exec -->|"/rupsha/move"| mgr[manager, the only MAVLink speaker]
-    sensors[rupsha_sensors] --> vision[rupsha_vision: ArUco, YOLO]
-    sensors --> loc[rupsha_localization: shadow RI-EKF]
-    vision -->|"/rupsha/detections"| mgr
-    loc -->|"ExtNav, opt-in"| mgr
+  subgraph pi [Pi 5]
+    vision[camera and detections]
+    plan[legs and path]
   end
-  mgr -->|"MAVLink 2, sysid 245"| fc[Pixhawk: ArduRover 4.7.2]
-  fc -->|"rate and speed PIDs, EKF3, failsafes"| motors[skid outputs 73 and 74]
-  subgraph sim [rupsha_sim]
-    worldgen[seeded worldgen] --> gz[Gazebo Harmonic]
-    gz <-->|"JSON lockstep"| sitl[ArduRover SITL]
+  subgraph board [ESP32]
+    core1[core 1: encoder, IMU, speed, steer, stop]
+    core0[core 0: framed link, GPS]
   end
-  sitl -.->|"same manager, another URL"| mgr
+  plant[Gazebo Ackermann plant]
+  vision --> plan
+  plan -->|"speed mm/s, steer rad"| core0
+  core0 --> core1
+  core1 -->|"ticks, quaternion, fix"| plan
+  core1 -.->|same contract| plant
 ```
+
+ArduRover is not launched. The skid numbers stay in the ledger under the previous body.
 
 Exactly one node touches the board. A bug in a mission cannot write a motor command. Bench
 tools speak as sysid **246**. A tool that heartbeats as 245 and then exits latches the GCS
@@ -153,9 +168,10 @@ These are Mongla's, kept on purpose. Each one is a rule a test can fail.
    `turn_to`, `vision_approach`, `search_spiral` — with a single result type. A mission is
    plain Python: `rupsha.goto_gnss(lat, lon)`.
 3. **NaN means absent.** No reading defaults to zero. A detection with no age is not fresh.
-4. **Reflexes on the board, thinking on the companion.** ArduRover closes the turn-rate and
-   speed loops, mixes skid steering, follows S-curves, runs EKF3 and every failsafe. The Pi
-   sends intent.
+4. **Reflexes on the board, thinking on the companion.** The ESP32 owns the speed loop, the
+   steer, and the stop. The Pi sends speed and steer, and a heartbeat. A frame that is late
+   must not be able to stall the wheels. On the previous body, ArduRover closed those loops
+   and the Pi sent MAVLink intent.
 5. **Truth tests.** A simulated run is scored on the simulator's ground truth, never on the
    estimate the rover steered by. In Gazebo that topic is `/sim/ground_truth/odometry`.
 
@@ -177,7 +193,8 @@ The research those rules came from, with the files they were read in:
 
 ## A marker leg
 
-This is the loop the stack can run today, headless, in Gazebo. Post 3 of `flat_ci` carries a
+This run is the **previous body**: the skid model and ArduRover. That launch is gone.
+It is not a result for the Ackermann chassis. Post 3 of `flat_ci` carries a
 20 cm ArUco tag. The executive is sent to a GNSS point 6 m short of it. From there:
 
 ```mermaid
@@ -229,11 +246,16 @@ sudo -u fh1m bash -lc 'cd /home/fh1m/tmp/rupsha_ws && source /opt/ros/jazzy/setu
 # and is only for a person who wants to watch.
 sudo -u fh1m bash -lc 'cd /home/fh1m/tmp/rupsha_ws && source /opt/ros/jazzy/setup.bash && source install/setup.bash && export GZ_VERSION=harmonic && /opt/rupsha-venv/bin/python -m pytest -q -m gazebo src/rupsha_sim'
 
-# the whole stack, headless, flat_ci
-sudo -u fh1m bash -lc 'cd /home/fh1m/tmp/rupsha_ws && source /opt/ros/jazzy/setup.bash && source install/setup.bash && export GZ_VERSION=harmonic && ros2 launch rupsha_sim sim.launch.py headless:=true'
+# the Ackermann plant and the board contract. This is the default sim.
+sudo -u fh1m bash -lc 'cd /home/fh1m/tmp/rupsha_ws && source /opt/ros/jazzy/setup.bash && source install/setup.bash && export GZ_VERSION=harmonic ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST && ros2 launch rupsha_sim sim.launch.py headless:=true'
+
 ```
 
-With the Pixhawk on USB and nothing on the servo outputs:
+The default launch forces localhost discovery. Multicast on this subnet does not reliably
+join the controller manager to the robot description. A shell left on `SUBNET` will not see
+these nodes.
+
+With the previous Pixhawk on USB and nothing on the servo outputs:
 
 ```bash
 ros2 run rupsha_control param_audit
@@ -256,11 +278,12 @@ The Pi is down. Do not SSH it, and do not run `tools/pil.sh`, until it is back.
 | Arming the real board | a person, for the onboard compass, and the safety switch |
 | Pi-in-the-loop | the Pi 4 is powered off |
 | Sim-on-Hardware | the simulated IMUs never report healthy; recorded, not to be re-flashed casually |
-| Anything FIELD | a chassis, motors, drivers, a battery |
+| Anything FIELD | the chassis on the ground, then a battery and a first outdoor run |
 | RTK heading | two u-blox F9P receivers |
 
-The order from here is in [ROADMAP](.claude/context/ROADMAP.md). The next Gazebo run is a full
-`urc_autonomy` course, scored the same way as the marker leg.
+The order from here is in [ROADMAP](.claude/context/ROADMAP.md). The marker leg and the
+`urc_autonomy` course were scored on the previous skid body. They wait until this hull's
+contract is the one the executive speaks.
 
 ---
 

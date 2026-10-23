@@ -6,6 +6,30 @@ reasons; where a claim was later *measured* here, the measurement is linked and 
 
 Each section ends with **Revisit when** — the event that would change the verdict.
 
+## The chassis, read and not copied
+
+The body being built reuses the shape of Rakibul Islam's 2025 WRO chassis
+([LazyGo](https://github.com/A-N-M-Noor/LazyGo_WRO2025)). The repository was read. The code
+was not ported.
+
+Taken: the 20 cm by 10 cm footprint, one 25GA370 through a differential, 1873 ticks per metre
+as the average of the two driven wheels, wheelbase 0.12 m from the xacro, hinge limit ±45°,
+wheel radius 0.02 m. GPS is added (u-blox M8N). The lidar is left off.
+
+Not taken: the one-byte serial map, the 12.5 Hz speed PI, the lidar disparity extender, the
+parking state machine, BNO055 Euler angles as heading, the four independent wheel joints in
+their Gazebo model, and the sonars listed in a yaml the robot does not have. Their three
+steer numbers disagree (30°, 45°, about 39°). The plant uses the xacro and says the real
+radius is unmeasured.
+
+The sim stays Gazebo Harmonic with `gz_ros2_control`. Leaving ArduRover did not force another
+engine. Webots was the only close alternative. F1TENTH Gym is a 2D kinematic racer with no
+camera, so it cannot test this stack. Isaac and CARLA are the wrong size, and the Hailo-8 is
+not an NVIDIA GPU. There is no official Hailo ROS package. The sim does not pretend to be one.
+
+Section 1 below is the **previous** computer, a Pixhawk running ArduRover. It stays because
+that body is still in the repo.
+
 ## 1. Firmware: ArduRover 4.7.2 on the Pixhawk 2.4.8
 
 **Chosen:** ArduPilot Rover 4.7.2 stable, `Pixhawk1` target (the chip identified as STM32F427

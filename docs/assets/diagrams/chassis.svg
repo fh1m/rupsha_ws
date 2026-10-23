@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 360" role="img" aria-label="Top view of the Ackermann chassis. One driven rear axle, two steered front wheels, a camera, no lidar.">
+  <rect width="880" height="360" fill="#000"/>
+  <text x="40" y="42" fill="#ff5747" font-family="ui-monospace, monospace" font-size="14">TOP VIEW  ·  A DRAWING  ·  20 cm BY 10 cm</text>
+  <g transform="translate(250 70)">
+    <rect x="80" y="70" width="280" height="140" fill="none" stroke="#ff0000" stroke-width="3"/>
+    <line x1="110" y1="140" x2="330" y2="140" stroke="#f88701" stroke-width="2"/>
+    <circle cx="110" cy="70" r="28" fill="none" stroke="#fff" stroke-width="3"/>
+    <circle cx="110" cy="210" r="28" fill="none" stroke="#fff" stroke-width="3"/>
+    <circle cx="360" cy="78" r="28" fill="none" stroke="#fff" stroke-width="3" transform="rotate(-28 360 78)"/>
+    <circle cx="360" cy="202" r="28" fill="none" stroke="#fff" stroke-width="3" transform="rotate(28 360 202)"/>
+    <rect x="300" y="124" width="36" height="22" fill="#ff0000"/>
+    <text x="80" y="250" fill="#fff" font-family="ui-monospace, monospace" font-size="13">REAR  DRIVEN</text>
+    <text x="300" y="250" fill="#fff" font-family="ui-monospace, monospace" font-size="13">FRONT  STEER</text>
+    <text x="300" y="112" fill="#ff5747" font-family="ui-monospace, monospace" font-size="12">CAMERA</text>
+  </g>
+  <text x="560" y="120" fill="#fff" font-family="ui-sans-serif, sans-serif" font-size="16">One motor. Two rear wheels.</text>
+  <text x="560" y="148" fill="#fff" font-family="ui-sans-serif, sans-serif" font-size="16">1873 ticks per metre.</text>
+  <text x="560" y="176" fill="#fff" font-family="ui-sans-serif, sans-serif" font-size="16">GPS on. Lidar off.</text>
+  <text x="560" y="220" fill="#ff5747" font-family="ui-sans-serif, sans-serif" font-size="14">Not a photograph. Outdoors is 0.</text>
+</svg>

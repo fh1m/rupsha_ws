@@ -1,7 +1,7 @@
 ---
 layout: default
 title: The Shift
-description: "Reflexes on a Pixhawk running ArduRover, thinking on a Raspberry Pi 4, and why that line is the whole design."
+description: "Reflexes on a custom ESP32 board, thinking on a Raspberry Pi 5, and why a slow camera frame must not be able to stall the wheels."
 ---
 
 # The Shift — from a submarine to a rover, and where the thinking lives
@@ -22,13 +22,19 @@ waypoints comes next, notice that the wheels are spinning but the rover is not m
 is large and irregular — a neural network may take 80 ms one frame and 140 ms the next — and it
 is fine for it to be a little late, as long as it is never *wrong about being late*.
 
-Rupsha gives each job to a computer built for it. A **Pixhawk** flight controller running
-**ArduRover** does the reflexes. A **Raspberry Pi 4** does the thinking. One cable joins them,
-and across it flows a language called MAVLink.
+Rupsha gives each job to a computer built for it. A **custom ESP32 board** does the reflexes:
+the encoder, the IMU, the speed loop, the steering servo, and the stop. A **Raspberry Pi 5**
+does the thinking, with a Hailo-8 hat when that hat is on a bench. The sim does not pretend
+to be a Hailo. One link joins them. The Pi sends a speed and a steer. The board sends ticks,
+a rotation, and a GPS fix. If the Pi goes quiet, the board zeros the speed and centres the
+steer. It does not keep driving a mission.
 
-## 2. What the Pixhawk already knows how to do
+The previous computer was a Pixhawk running ArduRover, and a Pi 4. That split is still in the
+repository, and its measurements are labelled as that body. It is not the machine being built.
 
-ArduRover is fifteen years of other people's field time. Out of the box it:
+## 2. What the previous board already knew how to do
+
+ArduRover is fifteen years of other people's field time. On the previous body it:
 
 - closes the **turn-rate** and **speed** loops (`ATC_STR_RAT_*`, `ATC_SPEED_*`);
 - **mixes skid steering**: "go 1 m/s while turning 30°/s" becomes a left-wheel and a right-wheel
@@ -37,10 +43,11 @@ ArduRover is fifteen years of other people's field time. Out of the box it:
 - runs **EKF3**, the estimator that fuses the IMU, compass and GNSS into "where am I";
 - owns **every failsafe**: lose the companion, lose the radio, lose the EKF — and it holds.
 
-Rewriting any of that on the Pi would move a loop that must never stall onto a Linux machine that
-sometimes does. So Rupsha does not. The Pi sends **intent** — "go to this latitude/longitude",
-"drive at 0.5 m/s turning 10°/s for the next 100 ms" — and the board decides how to make the
-motors do it.
+That was the right split for a flight controller we did not write. This chassis wants the
+loop in firmware we do write, aimed at 200 Hz and not claimed until a scope shows it. The
+thing that must not move onto the Pi is the same: a Linux frame that takes 80 ms must not be
+able to stall the wheels. The Pi sends **intent** — a speed in millimetres per second and a
+steer in radians — and the board decides the pulses.
 
 <p align="center"><img src="assets/diagrams/split.svg" alt="The Pi thinks. The Pixhawk runs the loops, the mixer and the failsafes." width="100%"></p>
 
@@ -87,9 +94,9 @@ vehicle-specific parts were replaced:
 
 | | Mongla (AUV) | Rupsha (rover) |
 |---|---|---|
-| Reflex board | SROT board, firmware Hengla, 500 Hz | Pixhawk 2.4.8, ArduRover 4.7.2 |
-| Companion | Pi 5 + Hailo-8 | Pi 4 (OAK-D or an Orin later) |
-| Position | downward camera, no GNSS underwater | GNSS + EKF3, RTK later |
+| Reflex board | SROT board, firmware Hengla | ESP32, firmware not written yet. The Pixhawk was the previous board |
+| Companion | Pi 5 + Hailo-8 | Pi 5 + Hailo-8, the same place. The Pi 4 was the previous companion |
+| Position | downward camera, no GNSS underwater | encoder and heading between GPS fixes. The M8N is the outdoor fix |
 | The hard part | depth hold, buoyancy, a camera in water | terrain, slip, getting stuck, long legs |
 | Mission shape | RoboSub tasks | URC-style legs: GNSS points, ArUco posts, objects |
 
@@ -100,7 +107,7 @@ arrival before declaring it.
 
 ## 6. What this does not claim
 
-The chassis does not exist yet. Every result in this repository comes from the real board on a
-desk, from ArduRover's own simulator, or from Gazebo — each labelled as such in the
-[capability map](capability-map.md). The first outdoor run will change some of these numbers;
-when it does, the measurement wins.
+The chassis is being built. Nothing has been outdoors. The pictures are drawings. Every
+result comes from the previous Pixhawk on a desk, from ArduRover's simulator, or from Gazebo,
+and the page that lists them says which body it was. The first outdoor run will change some
+of these numbers; when it does, the measurement wins.
